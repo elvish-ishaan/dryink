@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.handlePrompt = void 0;
+exports.handleFollowUpPrompt = exports.handlePrompt = void 0;
 const genai_1 = require("@google/genai");
 const prompts_1 = require("../lib/prompts");
 const redisConfig_1 = require("../configs/redisConfig");
@@ -20,18 +20,33 @@ var JobStatus;
     JobStatus["PENDING"] = "pending";
     JobStatus["COMPLETED"] = "completed";
 })(JobStatus || (JobStatus = {}));
+// --- Redis Wait Helper ---
+const waitForJobCompletion = (jobId) => {
+    return new Promise((resolve, reject) => {
+        const channel = `job:done:${jobId}`;
+        const handleMessage = (message) => {
+            try {
+                const result = JSON.parse(message);
+                redisConfig_1.redisPublisher.unsubscribe(channel);
+                resolve(result);
+            }
+            catch (err) {
+                reject(err);
+            }
+        };
+        redisConfig_1.redisPublisher.subscribe(channel, handleMessage);
+    });
+};
+// --- Main Prompt Handler ---
 const handlePrompt = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        //get the prompt from the request body
         const { prompt, height, width, fps, frameCount } = req.body;
         if (!prompt || !height || !width || !fps || !frameCount) {
-            return res.json({
-                sucess: false,
-                message: 'all parameters are required'
+            return res.status(400).json({
+                success: false,
+                message: 'All parameters are required',
             });
         }
-        //sanitize the prompt
-        //call llm(gemini) to generate the response
         const ai = new genai_1.GoogleGenAI({ apiKey: process.env.LLM_API_KEY });
         const response = yield ai.models.generateContent({
             model: "gemini-2.0-flash",
@@ -40,46 +55,103 @@ const handlePrompt = (req, res) => __awaiter(void 0, void 0, void 0, function* (
                 systemInstruction: prompts_1.systemPrompt,
             },
         });
-        console.log(response.text);
-        //pushing to redis channel
         const jobData = {
             jobId: (0, uuid_1.v4)(),
             status: JobStatus.PENDING,
             response: response.text,
-            height: height,
-            width: width,
-            fps: fps,
-            frameCount: frameCount,
+            height,
+            width,
+            fps,
+            frameCount,
         };
-        try {
-            const taskQueueKey = 'tasks';
-            yield redisConfig_1.redisPublisher.lPush(taskQueueKey, JSON.stringify(jobData));
-            // Subscribe to job completion channel
-            let result;
-            const channel = `job:done:${jobData.jobId}`;
-            yield redisConfig_1.redisPublisher.subscribe(channel, (message) => {
-                result = JSON.parse(message);
-                console.log(` Job ${jobData.jobId} completed:`, result);
-                // Optionally unsubscribe after receiving the message
-                redisConfig_1.redisPublisher.unsubscribe(channel);
+        console.log('pushing job to queue...........');
+        // Push job to queue
+        yield redisConfig_1.redisPublisher.lPush('tasks', JSON.stringify(jobData));
+        console.log('waiting to finish........');
+        // Wait for job to complete via Redis pub/sub
+        const result = yield waitForJobCompletion(jobData.jobId);
+        console.log('getting result........');
+        if (result.status === JobStatus.COMPLETED) {
+            const signedUrl = yield (0, utils_1.getS3SignedUrl)(process.env.AWS_BUCKET, `${jobData.jobId}.mp4`);
+            console.log('sending responce.................');
+            return res.json({
+                success: true,
+                data: {
+                    signedUrl,
+                    prompt,
+                    genRes: response.text,
+                }
             });
         }
-        catch (error) {
-            console.log(error, 'error in publishing to redis');
+        else {
+            return res.status(500).json({
+                success: false,
+                message: 'Job failed or incomplete',
+            });
         }
-        //returnig pre-signed url of the video
-        const signedUrl = yield (0, utils_1.getS3SignedUrl)(process.env.AWS_BUCKET, `${jobData.jobId}.mp4`);
-        //returning the response
-        return res.json({
-            sucess: true,
-            data: signedUrl
-        });
     }
     catch (error) {
+        console.error('handlePrompt error:', error);
         return res.status(500).json({
-            sucess: false,
-            message: 'internal server error'
+            success: false,
+            message: 'Internal server error',
         });
     }
 });
 exports.handlePrompt = handlePrompt;
+// --- Follow-up Prompt Handler ---
+const handleFollowUpPrompt = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { followUprompt, previousGenRes, height, width, fps, frameCount } = req.body;
+        if (!followUprompt || !previousGenRes || !height || !width || !fps || !frameCount) {
+            return res.status(400).json({
+                success: false,
+                message: 'All parameters are required',
+            });
+        }
+        const ai = new genai_1.GoogleGenAI({ apiKey: process.env.LLM_API_KEY });
+        const response = yield ai.models.generateContent({
+            model: "gemini-2.0-flash",
+            contents: prompts_1.modifySketchSystemPrompt + followUprompt + previousGenRes,
+            config: {
+                systemInstruction: prompts_1.systemPrompt,
+            },
+        });
+        const jobData = {
+            jobId: (0, uuid_1.v4)(),
+            status: JobStatus.PENDING,
+            response: response.text,
+            height,
+            width,
+            fps,
+            frameCount,
+        };
+        yield redisConfig_1.redisPublisher.lPush('tasks', JSON.stringify(jobData));
+        const result = yield waitForJobCompletion(jobData.jobId);
+        if (result.status === JobStatus.COMPLETED) {
+            const signedUrl = yield (0, utils_1.getS3SignedUrl)(process.env.AWS_BUCKET, `${jobData.jobId}.mp4`);
+            return res.json({
+                success: true,
+                data: {
+                    signedUrl,
+                    followUprompt,
+                    genRes: response.text,
+                }
+            });
+        }
+        else {
+            return res.status(500).json({
+                success: false,
+                message: 'Job failed or incomplete',
+            });
+        }
+    }
+    catch (error) {
+        console.error('handleFollowUpPrompt error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error',
+        });
+    }
+});
+exports.handleFollowUpPrompt = handleFollowUpPrompt;

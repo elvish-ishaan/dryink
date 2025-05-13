@@ -4,4 +4,5 @@ const express_1 = require("express");
 const promController_1 = require("../controllers/promController");
 const router = (0, express_1.Router)();
 router.post("/", promController_1.handlePrompt);
+router.post('/followUpPrompt', promController_1.handleFollowUpPrompt);
 exports.default = router;
