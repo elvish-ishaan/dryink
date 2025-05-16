@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Card,
   CardHeader,
@@ -46,11 +46,17 @@ const Page = () => {
   const [currentResponse, setCurrentResponse] = useState<string>('');
   const [initPrompt, setInitPrompt] = useState(false);
 
+  // const [startVideo, setStartVideo] = useState(false);
+  // const [previewAudioStart, setPreviewAudioStart] = useState(false);
+
   // Parameters with validation
   const [fps, setFps] = useState<number>(30);
   const [frameCount, setFrameCount] = useState<number>(100);
   const [width, setWidth] = useState<number>(800);
   const [height, setHeight] = useState<number>(600);
+
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
 
   // Undo/Redo state
   const [videoHistory, setVideoHistory] = useState<{
@@ -262,6 +268,26 @@ const Page = () => {
 
   const canUndo = videoHistory.currentIndex > 0;
   const canRedo = videoHistory.currentIndex < videoHistory.urls.length - 1;
+
+  //handing video atuoplay when recorder started
+  // useEffect(() => {
+  //   if (startVideo) {
+  //     const video = document.querySelector('video') as HTMLVideoElement;
+  //     video.play();
+  //   }
+  // }, [startVideo]);
+
+  //handling prevew
+  // const handlePreview = () => {
+  //   setPreviewAudioStart(true);
+  // };
+
+  // Effect to play the video when previewAudioStart becomes true
+  // useEffect(() => {
+  //   if (previewAudioStart && videoRef.current) {
+  //     videoRef.current.play();
+  //   }
+  // }, [previewAudioStart]);
 
   return (
     <div className="flex flex-col h-screen">
@@ -479,6 +505,7 @@ const Page = () => {
               <>
                 <div className="w-full max-w-3xl overflow-hidden rounded-md shadow-lg">
                   <video
+                    ref={videoRef}
                     key={currentVideoUrl}
                     src={currentVideoUrl}
                     controls
@@ -486,6 +513,10 @@ const Page = () => {
                     className="w-full"
                   />
                 </div>
+                {/* <Button onClick={handlePreview}>Preview</Button>
+                <AudioRecorder setStartVideo={setStartVideo}
+                previewAudioStart={previewAudioStart}
+                /> */}
                 <div className="flex gap-2 w-full max-w-3xl justify-center">
                   <Button 
                     onClick={handleUndo} 

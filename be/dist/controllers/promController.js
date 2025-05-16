@@ -47,14 +47,31 @@ const handlePrompt = (req, res) => __awaiter(void 0, void 0, void 0, function* (
                 message: 'All parameters are required',
             });
         }
+        //call prompt ehancer model for propmpt optimization
+        // const promptOptModel = new GoogleGenAI({ apiKey: process.env.LLM_API_KEY });
+        // const promptEnhancerResponse = await promptOptModel.models.generateContent({
+        //   model: process.env.LLM_MODEL_SEC as string,
+        //   contents: prompt as string,
+        //   config: {
+        //     systemInstruction: userPromptEnhancerSystemPrompt,
+        //   },
+        // });
+        // const optimisedPromptRes = promptEnhancerResponse.text;
+        // console.log('promptEnhancerResponse', optimisedPromptRes)
+        console.log('generating main responce from code gen model............');
+        const startTime = Date.now();
         const ai = new genai_1.GoogleGenAI({ apiKey: process.env.LLM_API_KEY });
         const response = yield ai.models.generateContent({
-            model: "gemini-2.0-flash",
+            model: process.env.LLM_MODEL,
             contents: prompt,
             config: {
-                systemInstruction: prompts_1.systemPrompt,
+                temperature: 0.3,
+                systemInstruction: prompts_1.newSystemPrompt,
             },
         });
+        const endTime = Date.now();
+        console.log('time taken:', endTime - startTime);
+        console.log('response generated........');
         const jobData = {
             jobId: (0, uuid_1.v4)(),
             status: JobStatus.PENDING,
@@ -111,10 +128,10 @@ const handleFollowUpPrompt = (req, res) => __awaiter(void 0, void 0, void 0, fun
         }
         const ai = new genai_1.GoogleGenAI({ apiKey: process.env.LLM_API_KEY });
         const response = yield ai.models.generateContent({
-            model: "gemini-2.0-flash",
+            model: process.env.LLM_MODEL,
             contents: prompts_1.modifySketchSystemPrompt + followUprompt + previousGenRes,
             config: {
-                systemInstruction: prompts_1.systemPrompt,
+                systemInstruction: prompts_1.newSystemPrompt,
             },
         });
         const jobData = {

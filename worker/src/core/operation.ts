@@ -57,6 +57,10 @@ export async function generateVideo(opts: RenderHTMLToVideoOptions): Promise<str
     }, i);
 
     await page.screenshot({ path: filename });
+
+    //break loop when the diff between the last two frames is equal to zero (no movement)
+    
+    
     console.log(`Captured frame ${i} → ${filename}`);
   }
 
@@ -64,13 +68,17 @@ export async function generateVideo(opts: RenderHTMLToVideoOptions): Promise<str
 
   console.log('Generating video with FFmpeg...');
   await execa(ffmpegPath!, [
-    '-y',
-    '-framerate', String(fps),
-    '-i', path.join(framesDir, 'frame_%04d.png'),
-    '-c:v', 'libx264',
-    '-pix_fmt', 'yuv420p',
-    outputPath,
-  ]);
+  '-y',
+  '-framerate', String(fps),
+  '-i', path.join(framesDir, 'frame_%04d.png'),
+  '-c:v', 'libx264',
+  '-pix_fmt', 'yuv420p',
+  '-crf', '18',               // Better quality
+  '-preset', 'slow',          // Better compression
+  '-profile:v', 'high',       // High profile
+  outputPath,
+]);
+
 
   console.log(`Video saved to ${outputPath}`);
   return outputPath;

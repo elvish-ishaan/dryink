@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 
 import promptRoute from './routes/prompt'
+import editorRoute from './routes/editor'
 
 dotenv.config();
 
@@ -13,6 +14,7 @@ app.use(cors())
 
 //all base routes
 app.use('/api/v1/prompt', promptRoute)
+app.use('/api/v1/editor', editorRoute)
 
 app.get("/", (req, res) => {
   res.send("Hello World!");

@@ -1,9 +1,10 @@
 import { Request, Response } from "express";
 import { GoogleGenAI } from "@google/genai";
-import { modifySketchSystemPrompt, systemPrompt } from "../lib/prompts";
+import { modifySketchSystemPrompt, newSystemPrompt, systemPrompt, userPromptEnhancerSystemPrompt } from "../lib/prompts";
 import { redisPublisher } from "../configs/redisConfig";
 import { v4 as uuidv4 } from 'uuid';
 import { getS3SignedUrl } from "../lib/utils";
+import OpenAI from "openai";
 
 enum JobStatus {
     PENDING = "pending",
@@ -51,14 +52,34 @@ export const handlePrompt = async (req: Request, res: Response) => {
       });
     }
 
+    //call prompt ehancer model for propmpt optimization
+    // const promptOptModel = new GoogleGenAI({ apiKey: process.env.LLM_API_KEY });
+    // const promptEnhancerResponse = await promptOptModel.models.generateContent({
+    //   model: process.env.LLM_MODEL_SEC as string,
+    //   contents: prompt as string,
+    //   config: {
+    //     systemInstruction: userPromptEnhancerSystemPrompt,
+    //   },
+    // });
+
+    // const optimisedPromptRes = promptEnhancerResponse.text;
+    // console.log('promptEnhancerResponse', optimisedPromptRes)
+
+    console.log('generating main responce from code gen model............')
+    const startTime = Date.now();
     const ai = new GoogleGenAI({ apiKey: process.env.LLM_API_KEY });
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: process.env.LLM_MODEL as string,
       contents: prompt as string,
       config: {
-        systemInstruction: systemPrompt,
+        temperature: 0.3,
+        systemInstruction: newSystemPrompt,
       },
     });
+    const endTime = Date.now();
+    console.log('time taken:', endTime - startTime)
+    console.log('response generated........')
+
 
     const jobData: JobData = {
       jobId: uuidv4(),
@@ -122,10 +143,10 @@ export const handleFollowUpPrompt = async (req: Request, res: Response) => {
 
     const ai = new GoogleGenAI({ apiKey: process.env.LLM_API_KEY });
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: process.env.LLM_MODEL as string,
       contents: modifySketchSystemPrompt + followUprompt + previousGenRes as string,
       config: {
-        systemInstruction: systemPrompt,
+        systemInstruction: newSystemPrompt, 
       },
     });
 
