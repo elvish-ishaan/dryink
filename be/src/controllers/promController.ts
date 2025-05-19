@@ -53,19 +53,6 @@ export const handlePrompt = async (req: Request, res: Response) => {
       return
     }
 
-    //call prompt ehancer model for propmpt optimization
-    // const promptOptModel = new GoogleGenAI({ apiKey: process.env.LLM_API_KEY });
-    // const promptEnhancerResponse = await promptOptModel.models.generateContent({
-    //   model: process.env.LLM_MODEL_SEC as string,
-    //   contents: prompt as string,
-    //   config: {
-    //     systemInstruction: userPromptEnhancerSystemPrompt,
-    //   },
-    // });
-
-    // const optimisedPromptRes = promptEnhancerResponse.text;
-    // console.log('promptEnhancerResponse', optimisedPromptRes)
-
     console.log('generating main responce from code gen model............')
     const startTime = Date.now();
     const ai = new GoogleGenAI({ apiKey: process.env.LLM_API_KEY });

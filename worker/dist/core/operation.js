@@ -16,9 +16,9 @@ exports.generateVideo = generateVideo;
 const puppeteer_1 = __importDefault(require("puppeteer"));
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const path_1 = __importDefault(require("path"));
-const execa_1 = require("execa");
 const ffmpeg_static_1 = __importDefault(require("ffmpeg-static"));
 const os_1 = require("os");
+const child_process_1 = require("child_process");
 function generateVideo(opts) {
     return __awaiter(this, void 0, void 0, function* () {
         const { htmlContent, width = 800, height = 600, fps = 30, frameCount = 500, videoName = 'output.mp4', } = opts;
@@ -30,7 +30,6 @@ function generateVideo(opts) {
         try {
             yield fs_extra_1.default.ensureDir(baseDir);
             yield fs_extra_1.default.ensureDir(framesDir);
-            // Extract clean HTML
             const rawHtml = htmlContent.replace(/^```html\s*/, '').replace(/```$/, '');
             yield fs_extra_1.default.outputFile(htmlPath, rawHtml);
             const browser = yield puppeteer_1.default.launch({ headless: true });
@@ -40,7 +39,6 @@ function generateVideo(opts) {
             console.log('Starting frame capture...');
             for (let i = 0; i < frameCount; i++) {
                 const filename = path_1.default.join(framesDir, `frame_${String(i).padStart(4, '0')}.png`);
-                // Optionally: call a window.setFrame(i) if defined
                 yield page.evaluate((frameNum) => {
                     // @ts-ignore
                     if (typeof window.setFrame === 'function') {
@@ -49,37 +47,47 @@ function generateVideo(opts) {
                     }
                 }, i);
                 yield page.screenshot({ path: filename });
-                //break loop when the diff between the last two frames is equal to zero (no movement)
-                //
-                //
-                console.log(`Captured frame ${i} → ${filename}`);
+                console.log(`Captured frame ${i + 1}/${frameCount}`);
             }
             yield browser.close();
             console.log('Generating video with FFmpeg...');
-            if (!ffmpeg_static_1.default) {
-                throw new Error('FFmpeg path not found. Ensure ffmpeg-static is installed.');
-            }
-            yield (0, execa_1.execa)(ffmpeg_static_1.default, [
-                '-y',
-                '-framerate', String(fps),
-                '-i', path_1.default.join(framesDir, 'frame_%04d.png'),
-                '-c:v', 'libx264',
-                '-pix_fmt', 'yuv420p',
-                '-crf', '18', // Better quality
-                '-preset', 'slow', // Better compression
-                '-profile:v', 'high', // High profile
-                outputPath,
-            ]);
+            yield runFFmpeg(framesDir, outputPath, fps);
             console.log(`Video saved to ${outputPath}`);
-            return outputPath;
+            return outputPath; // Let the caller handle cleanup & upload
         }
-        catch (error) {
-            console.error('Error during video generation:', error);
-            throw error; // Re-throw the error to be handled by the caller
+        catch (err) {
+            console.error('Error during video generation:', err);
+            throw err;
         }
-        finally {
-            // Clean up temporary directory
-            yield fs_extra_1.default.remove(baseDir).catch((err) => console.error('Error removing temporary directory:', err));
-        }
+    });
+}
+function runFFmpeg(framesDir, outputPath, fps) {
+    return new Promise((resolve, reject) => {
+        const ffmpeg = (0, child_process_1.spawn)(ffmpeg_static_1.default, [
+            '-y',
+            '-framerate', String(fps),
+            '-i', path_1.default.join(framesDir, 'frame_%04d.png'),
+            '-c:v', 'libx264',
+            '-pix_fmt', 'yuv420p',
+            '-crf', '18',
+            '-preset', 'slow',
+            '-profile:v', 'high',
+            outputPath,
+        ]);
+        ffmpeg.stdout.on('data', (data) => {
+            console.log(`FFmpeg stdout: ${data}`);
+        });
+        ffmpeg.stderr.on('data', (data) => {
+            console.log(`FFmpeg stderr: ${data}`);
+        });
+        ffmpeg.on('close', (code) => {
+            if (code === 0)
+                resolve();
+            else
+                reject(new Error(`FFmpeg process exited with code ${code}`));
+        });
+        ffmpeg.on('error', (err) => {
+            reject(err);
+        });
     });
 }

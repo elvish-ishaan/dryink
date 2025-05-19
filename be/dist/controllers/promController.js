@@ -42,22 +42,12 @@ const handlePrompt = (req, res) => __awaiter(void 0, void 0, void 0, function* (
     try {
         const { prompt, height, width, fps, frameCount } = req.body;
         if (!prompt || !height || !width || !fps || !frameCount) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 message: 'All parameters are required',
             });
+            return;
         }
-        //call prompt ehancer model for propmpt optimization
-        // const promptOptModel = new GoogleGenAI({ apiKey: process.env.LLM_API_KEY });
-        // const promptEnhancerResponse = await promptOptModel.models.generateContent({
-        //   model: process.env.LLM_MODEL_SEC as string,
-        //   contents: prompt as string,
-        //   config: {
-        //     systemInstruction: userPromptEnhancerSystemPrompt,
-        //   },
-        // });
-        // const optimisedPromptRes = promptEnhancerResponse.text;
-        // console.log('promptEnhancerResponse', optimisedPromptRes)
         console.log('generating main responce from code gen model............');
         const startTime = Date.now();
         const ai = new genai_1.GoogleGenAI({ apiKey: process.env.LLM_API_KEY });
@@ -91,7 +81,7 @@ const handlePrompt = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         if (result.status === JobStatus.COMPLETED) {
             const signedUrl = yield (0, utils_1.getS3SignedUrl)(process.env.AWS_BUCKET, `${jobData.jobId}.mp4`);
             console.log('sending responce.................');
-            return res.json({
+            res.json({
                 success: true,
                 data: {
                     signedUrl,
@@ -99,20 +89,23 @@ const handlePrompt = (req, res) => __awaiter(void 0, void 0, void 0, function* (
                     genRes: response.text,
                 }
             });
+            return;
         }
         else {
-            return res.status(500).json({
+            res.status(500).json({
                 success: false,
                 message: 'Job failed or incomplete',
             });
+            return;
         }
     }
     catch (error) {
         console.error('handlePrompt error:', error);
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             message: 'Internal server error',
         });
+        return;
     }
 });
 exports.handlePrompt = handlePrompt;
@@ -121,10 +114,11 @@ const handleFollowUpPrompt = (req, res) => __awaiter(void 0, void 0, void 0, fun
     try {
         const { followUprompt, previousGenRes, height, width, fps, frameCount } = req.body;
         if (!followUprompt || !previousGenRes || !height || !width || !fps || !frameCount) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 message: 'All parameters are required',
             });
+            return;
         }
         const ai = new genai_1.GoogleGenAI({ apiKey: process.env.LLM_API_KEY });
         const response = yield ai.models.generateContent({
@@ -147,7 +141,7 @@ const handleFollowUpPrompt = (req, res) => __awaiter(void 0, void 0, void 0, fun
         const result = yield waitForJobCompletion(jobData.jobId);
         if (result.status === JobStatus.COMPLETED) {
             const signedUrl = yield (0, utils_1.getS3SignedUrl)(process.env.AWS_BUCKET, `${jobData.jobId}.mp4`);
-            return res.json({
+            res.json({
                 success: true,
                 data: {
                     signedUrl,
@@ -155,20 +149,23 @@ const handleFollowUpPrompt = (req, res) => __awaiter(void 0, void 0, void 0, fun
                     genRes: response.text,
                 }
             });
+            return;
         }
         else {
-            return res.status(500).json({
+            res.status(500).json({
                 success: false,
                 message: 'Job failed or incomplete',
             });
+            return;
         }
     }
     catch (error) {
         console.error('handleFollowUpPrompt error:', error);
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             message: 'Internal server error',
         });
+        return;
     }
 });
 exports.handleFollowUpPrompt = handleFollowUpPrompt;
