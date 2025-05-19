@@ -1,9 +1,9 @@
 import puppeteer from 'puppeteer';
 import fs from 'fs-extra';
 import path from 'path';
-import { execa } from 'execa';
 import ffmpegPath from 'ffmpeg-static';
 import { tmpdir } from 'os';
+import { spawn } from 'child_process';
 
 interface RenderHTMLToVideoOptions {
   htmlContent: string;
@@ -44,10 +44,8 @@ export async function generateVideo(opts: RenderHTMLToVideoOptions): Promise<str
     await page.goto(`file://${htmlPath}`);
 
     console.log('Starting frame capture...');
-
     for (let i = 0; i < frameCount; i++) {
       const filename = path.join(framesDir, `frame_${String(i).padStart(4, '0')}.png`);
-
       // Optionally: call a window.setFrame(i) if defined
       await page.evaluate((frameNum) => {
         // @ts-ignore
@@ -56,42 +54,62 @@ export async function generateVideo(opts: RenderHTMLToVideoOptions): Promise<str
           window.setFrame(frameNum);
         }
       }, i);
-
       await page.screenshot({ path: filename });
-
-      //break loop when the diff between the last two frames is equal to zero (no movement)
-      //
-      //
-
       console.log(`Captured frame ${i} → ${filename}`);
     }
-
     await browser.close();
 
     console.log('Generating video with FFmpeg...');
-    if (!ffmpegPath) {
-      throw new Error('FFmpeg path not found. Ensure ffmpeg-static is installed.');
-    }
-    await execa(ffmpegPath, [
-      '-y',
-      '-framerate', String(fps),
-      '-i', path.join(framesDir, 'frame_%04d.png'),
-      '-c:v', 'libx264',
-      '-pix_fmt', 'yuv420p',
-      '-crf', '18',          // Better quality
-      '-preset', 'slow',       // Better compression
-      '-profile:v', 'high',    // High profile
-      outputPath,
-    ]);
 
+    // Create a promise-based wrapper for the FFmpeg process
+    const runFFmpeg = (): Promise<void> => {
+      return new Promise<void>((resolve, reject) => {
+        const ffmpeg = spawn(ffmpegPath!, [
+          '-y',
+          '-framerate',
+          String(fps),
+          '-i',
+          path.join(framesDir, 'frame_%04d.png'),
+          '-c:v',
+          'libx264',
+          '-pix_fmt',
+          'yuv420p',
+          '-crf',
+          '18', // Better quality
+          '-preset',
+          'slow', // Better compression
+          '-profile:v',
+          'high', // High profile
+          outputPath,
+        ]);
+
+        ffmpeg.stdout.on('data', (data) => {
+          console.log(`FFmpeg stdout: ${data}`);
+        });
+
+        ffmpeg.stderr.on('data', (data) => {
+          console.log(`FFmpeg stderr: ${data}`);
+        });
+
+        ffmpeg.on('close', (code) => {
+          if (code === 0) {
+            resolve();
+          } else {
+            reject(new Error(`FFmpeg process exited with code ${code}`));
+          }
+        });
+
+        ffmpeg.on('error', (err) => {
+          reject(err);
+        });
+      });
+    };
+
+    await runFFmpeg();
     console.log(`Video saved to ${outputPath}`);
     return outputPath;
-
-  } catch (error) {
-    console.error('Error during video generation:', error);
-    throw error; // Re-throw the error to be handled by the caller
   } finally {
     // Clean up temporary directory
-    await fs.remove(baseDir).catch((err) => console.error('Error removing temporary directory:', err));
+    await fs.remove(baseDir);
   }
 }
