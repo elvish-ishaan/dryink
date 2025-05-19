@@ -46,10 +46,11 @@ export const handlePrompt = async (req: Request, res: Response) => {
     const { prompt, height, width, fps, frameCount } = req.body;
 
     if (!prompt || !height || !width || !fps || !frameCount) {
-      return res.status(400).json({
+       res.status(400).json({
         success: false,
         message: 'All parameters are required',
       });
+      return
     }
 
     //call prompt ehancer model for propmpt optimization
@@ -105,7 +106,7 @@ export const handlePrompt = async (req: Request, res: Response) => {
         `${jobData.jobId}.mp4`
       );
       console.log('sending responce.................')
-      return res.json({
+      res.json({
         success: true,
         data: {
           signedUrl,
@@ -113,19 +114,22 @@ export const handlePrompt = async (req: Request, res: Response) => {
           genRes: response.text,
         }
       });
+      return
     } else {
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         message: 'Job failed or incomplete',
       });
+      return
     }
 
   } catch (error) {
     console.error('handlePrompt error:', error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: 'Internal server error',
     });
+    return
   }
 };
 
@@ -135,10 +139,11 @@ export const handleFollowUpPrompt = async (req: Request, res: Response) => {
     const { followUprompt, previousGenRes, height, width, fps, frameCount } = req.body;
 
     if (!followUprompt || !previousGenRes || !height || !width || !fps || !frameCount) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'All parameters are required',
       });
+      return
     }
 
     const ai = new GoogleGenAI({ apiKey: process.env.LLM_API_KEY });
@@ -169,7 +174,7 @@ export const handleFollowUpPrompt = async (req: Request, res: Response) => {
         process.env.AWS_BUCKET as string,
         `${jobData.jobId}.mp4`
       );
-      return res.json({
+      res.json({
         success: true,
         data: {
           signedUrl,
@@ -177,18 +182,21 @@ export const handleFollowUpPrompt = async (req: Request, res: Response) => {
           genRes: response.text,
         }
       });
+      return
     } else {
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         message: 'Job failed or incomplete',
       });
+      return
     }
 
   } catch (error) {
     console.error('handleFollowUpPrompt error:', error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: 'Internal server error',
     });
+    return
   }
 };

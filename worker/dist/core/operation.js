@@ -27,44 +27,59 @@ function generateVideo(opts) {
         const htmlPath = path_1.default.join(baseDir, 'render.html');
         const framesDir = path_1.default.join(baseDir, 'frames');
         const outputPath = path_1.default.join(baseDir, videoName);
-        yield fs_extra_1.default.ensureDir(baseDir);
-        yield fs_extra_1.default.ensureDir(framesDir);
-        // Extract clean HTML
-        const rawHtml = htmlContent.replace(/^```html\s*/, '').replace(/```$/, '');
-        yield fs_extra_1.default.outputFile(htmlPath, rawHtml);
-        const browser = yield puppeteer_1.default.launch({ headless: true });
-        const page = yield browser.newPage();
-        yield page.setViewport({ width, height });
-        yield page.goto(`file://${htmlPath}`);
-        console.log('Starting frame capture...');
-        for (let i = 0; i < frameCount; i++) {
-            const filename = path_1.default.join(framesDir, `frame_${String(i).padStart(4, '0')}.png`);
-            // Optionally: call a window.setFrame(i) if defined
-            yield page.evaluate((frameNum) => {
-                // @ts-ignore
-                if (typeof window.setFrame === 'function') {
+        try {
+            yield fs_extra_1.default.ensureDir(baseDir);
+            yield fs_extra_1.default.ensureDir(framesDir);
+            // Extract clean HTML
+            const rawHtml = htmlContent.replace(/^```html\s*/, '').replace(/```$/, '');
+            yield fs_extra_1.default.outputFile(htmlPath, rawHtml);
+            const browser = yield puppeteer_1.default.launch({ headless: true });
+            const page = yield browser.newPage();
+            yield page.setViewport({ width, height });
+            yield page.goto(`file://${htmlPath}`);
+            console.log('Starting frame capture...');
+            for (let i = 0; i < frameCount; i++) {
+                const filename = path_1.default.join(framesDir, `frame_${String(i).padStart(4, '0')}.png`);
+                // Optionally: call a window.setFrame(i) if defined
+                yield page.evaluate((frameNum) => {
                     // @ts-ignore
-                    window.setFrame(frameNum);
-                }
-            }, i);
-            yield page.screenshot({ path: filename });
-            //break loop when the diff between the last two frames is equal to zero (no movement)
-            console.log(`Captured frame ${i} → ${filename}`);
+                    if (typeof window.setFrame === 'function') {
+                        // @ts-ignore
+                        window.setFrame(frameNum);
+                    }
+                }, i);
+                yield page.screenshot({ path: filename });
+                //break loop when the diff between the last two frames is equal to zero (no movement)
+                //
+                //
+                console.log(`Captured frame ${i} → ${filename}`);
+            }
+            yield browser.close();
+            console.log('Generating video with FFmpeg...');
+            if (!ffmpeg_static_1.default) {
+                throw new Error('FFmpeg path not found. Ensure ffmpeg-static is installed.');
+            }
+            yield (0, execa_1.execa)(ffmpeg_static_1.default, [
+                '-y',
+                '-framerate', String(fps),
+                '-i', path_1.default.join(framesDir, 'frame_%04d.png'),
+                '-c:v', 'libx264',
+                '-pix_fmt', 'yuv420p',
+                '-crf', '18', // Better quality
+                '-preset', 'slow', // Better compression
+                '-profile:v', 'high', // High profile
+                outputPath,
+            ]);
+            console.log(`Video saved to ${outputPath}`);
+            return outputPath;
         }
-        yield browser.close();
-        console.log('Generating video with FFmpeg...');
-        yield (0, execa_1.execa)(ffmpeg_static_1.default, [
-            '-y',
-            '-framerate', String(fps),
-            '-i', path_1.default.join(framesDir, 'frame_%04d.png'),
-            '-c:v', 'libx264',
-            '-pix_fmt', 'yuv420p',
-            '-crf', '18', // Better quality
-            '-preset', 'slow', // Better compression
-            '-profile:v', 'high', // High profile
-            outputPath,
-        ]);
-        console.log(`Video saved to ${outputPath}`);
-        return outputPath;
+        catch (error) {
+            console.error('Error during video generation:', error);
+            throw error; // Re-throw the error to be handled by the caller
+        }
+        finally {
+            // Clean up temporary directory
+            yield fs_extra_1.default.remove(baseDir).catch((err) => console.error('Error removing temporary directory:', err));
+        }
     });
 }
