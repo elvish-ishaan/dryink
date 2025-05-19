@@ -16,11 +16,11 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.806.0",
     "@aws-sdk/s3-request-presigner": "^3.806.0",
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@types/express": "^5.0.1",
     "dotenv": "^16.5.0",
-    "execa": "^9.5.3",
     "express": "^5.1.0",
-    "ffmpeg-static": "^5.2.0",
+    "fluent-ffmpeg": "^2.1.2",
     "fs-extra": "^11.3.0",
     "marked": "^15.0.11",
     "puppeteer": "^24.8.2",
@@ -29,6 +29,7 @@
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
+    "@types/fluent-ffmpeg": "^2.1.24",
     "nodemon": "^3.1.10"
   }
 }

@@ -3,6 +3,8 @@ import fs from 'fs-extra';
 import path from 'path';
 import ffmpegPath from 'ffmpeg-static';
 import { tmpdir } from 'os';
+import { spawn } from 'child_process';
+import { promisify } from 'util';
 
 interface RenderHTMLToVideoOptions {
   htmlContent: string;
@@ -62,18 +64,45 @@ export async function generateVideo(opts: RenderHTMLToVideoOptions): Promise<str
   await browser.close();
 
   console.log('Generating video with FFmpeg...');
-  const { execa } = await import('execa');
-  await execa(ffmpegPath!, [
-    '-y',
-    '-framerate', String(fps),
-    '-i', path.join(framesDir, 'frame_%04d.png'),
-    '-c:v', 'libx264',
-    '-pix_fmt', 'yuv420p',
-    '-crf', '18',               // Better quality
-    '-preset', 'slow',          // Better compression
-    '-profile:v', 'high',       // High profile
-    outputPath,
-  ]);
+  
+  // Create a promise-based wrapper for the FFmpeg process
+  const runFFmpeg = () => {
+    return new Promise<void>((resolve, reject) => {
+      const ffmpeg = spawn(ffmpegPath!, [
+        '-y',
+        '-framerate', String(fps),
+        '-i', path.join(framesDir, 'frame_%04d.png'),
+        '-c:v', 'libx264',
+        '-pix_fmt', 'yuv420p',
+        '-crf', '18',               // Better quality
+        '-preset', 'slow',          // Better compression
+        '-profile:v', 'high',       // High profile
+        outputPath,
+      ]);
+
+      ffmpeg.stdout.on('data', (data) => {
+        console.log(`FFmpeg stdout: ${data}`);
+      });
+
+      ffmpeg.stderr.on('data', (data) => {
+        console.log(`FFmpeg stderr: ${data}`);
+      });
+
+      ffmpeg.on('close', (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(`FFmpeg process exited with code ${code}`));
+        }
+      });
+
+      ffmpeg.on('error', (err) => {
+        reject(err);
+      });
+    });
+  };
+
+  await runFFmpeg();
 
   console.log(`Video saved to ${outputPath}`);
   return outputPath;
