@@ -51,7 +51,7 @@ const Page = () => {
 
   // Parameters with validation
   const [fps, setFps] = useState<number>(30);
-  const [frameCount, setFrameCount] = useState<number>(100);
+  const [frameCount, setFrameCount] = useState<number>(300);
   const [width, setWidth] = useState<number>(800);
   const [height, setHeight] = useState<number>(600);
 
