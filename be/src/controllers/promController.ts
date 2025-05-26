@@ -89,8 +89,8 @@ export const handlePrompt = async (req: Request, res: Response) => {
 
     if (result.status === JobStatus.COMPLETED) {
       const signedUrl = await getS3SignedUrl(
-        process.env.AWS_BUCKET as string,
-        `${jobData.jobId}.mp4`
+         process.env.AWS_BUCKET as string,
+        `${jobData.jobId}.mp4`,
       );
       console.log('sending responce.................')
       res.json({

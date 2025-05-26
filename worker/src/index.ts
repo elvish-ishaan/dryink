@@ -3,18 +3,20 @@ import { redisSubscriber } from "./configs/redis";
 import { generateVideo } from "./core/operation";
 import { uploadToS3 } from "./configs/s3Config";
 import fs from 'fs'
+import path from "path";
 
 
 const app = express();
 
 app.use(express.json())
 
+const PORT = process.env.PORT || 5001;
+
 app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
 const taskQueueKey = 'tasks';
-const completionChannel = 'task_completion';
 
 enum JobStatus {
     PENDING = "pending",
@@ -42,16 +44,21 @@ async function startWorker() {
       //upload the video to s3
       const uploadedObjUrl = await uploadToS3(videoPath, `${jobData.jobId}.mp4`);
 
-      //delete the whole directory form local storage
-      await new Promise((resolve, reject) => {
-        fs.unlink(videoPath, (err) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve("file deleted successfully");
-          }
-        });
+      //remove the whole directory from local storage
+      //go back to one level then remove the directory
+      const folderToDlt = path.dirname(videoPath)
+      console.log(folderToDlt, 'folder to delete')
+      try {
+     fs.rm(folderToDlt, { recursive: true }, (err) => {
+        if (err) {
+          console.error(`Error deleting folder ${folderToDlt}:`, err);
+        } else {
+          console.log(`Successfully deleted folder: ${folderToDlt}`);
+        }
       });
+    } catch (error) {
+      console.error(`Error deleting folder ${folderToDlt}:`, error);
+    }
       //return the job to  redis channel
       const completionInfo = {
         taskId: jobData.jobId,
@@ -72,7 +79,7 @@ async function startWorker() {
 console.log('Worker started. Waiting for tasks...');
 startWorker().catch(console.error);
 
-app.listen( 5001, () => {
-  console.log(`Server is running on port 5001`);
+app.listen( PORT, () => {
+  console.log(`Server running at ${PORT}`);
 });
 

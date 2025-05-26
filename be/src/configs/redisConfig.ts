@@ -1,12 +1,7 @@
 import { createClient } from 'redis';
 
 export const redisPublisher = createClient({
-    username: 'default',
-    password: 'FexKS6v9RAmJMTsucwzpQAx808fRwoCG',
-    socket: {
-        host: 'redis-15484.c305.ap-south-1-1.ec2.redns.redis-cloud.com',
-        port: 15484
-    }
+    url:  "rediss://default:AUHMAAIjcDE4YTJkZmI4ZDNmODk0MGViOGQ4MDQ2ZjRmYWQ0NTYwZnAxMA@composed-cobra-16844.upstash.io:6379"
 });
 
 async function connectRedis() {

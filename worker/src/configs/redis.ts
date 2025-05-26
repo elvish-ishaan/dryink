@@ -1,12 +1,7 @@
 import { createClient } from 'redis';
 
 export const redisSubscriber = createClient({
-    username: 'default',
-    password: 'FexKS6v9RAmJMTsucwzpQAx808fRwoCG',
-    socket: {
-        host: 'redis-15484.c305.ap-south-1-1.ec2.redns.redis-cloud.com',
-        port: 15484
-    }
+    url: process.env.REDIS_URL as string,
 });
 
 async function connectRedis() {

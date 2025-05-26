@@ -37,7 +37,7 @@ export async function generateVideo(opts: RenderHTMLToVideoOptions): Promise<str
     const rawHtml = htmlContent.replace(/^```html\s*/, '').replace(/```$/, '');
     await fs.outputFile(htmlPath, rawHtml);
 
-    const browser = await puppeteer.launch({ headless: true });
+    const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
     const page = await browser.newPage();
     await page.setViewport({ width, height });
     await page.goto(`file://${htmlPath}`);

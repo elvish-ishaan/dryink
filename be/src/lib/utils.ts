@@ -3,10 +3,15 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import { s3Client } from "../configs/s3Client";
 
-export async function getS3SignedUrl(bucket: string, key: string, expiresInSeconds: number = 3600) {
+export async function getS3SignedUrl(bucket: string, key: string, expiresInSeconds: number = 3600, downloadable: boolean = true) {
     try {
       // Create a GetObjectCommand to specify the S3 object
-      const getObjectCommandparams = {
+      const getObjectCommandparams = downloadable ? {
+        Bucket: bucket,
+        Key: key,
+        ResponseContentDisposition: `attachment`,
+      } :
+      {
         Bucket: bucket,
         Key: key,
         expiresInSeconds: expiresInSeconds,
