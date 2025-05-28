@@ -1,8 +1,8 @@
-# DRYINK
+# Dryink
 
 ## Introduction
 
-DRYINK is a web application that allows users to generate videos with a prompt. The application uses LLMs to generate video content and AI to enhance the video with audio and text overlays.
+Dryink is a web application that allows users to generate videos with a prompt. The application uses LLMs to generate video content and AI to enhance the video with audio and text overlays.
 
 ## Features
 
