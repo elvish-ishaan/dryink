@@ -17,7 +17,6 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@
 import { toast } from 'sonner';
 import { Download, Loader2, Undo2, Redo2, AlertCircle } from 'lucide-react';
 import clsx from 'clsx';
-import { BACKEND_BASE_URL } from '@/lib/constants';
 import Navbar from '@/components/navs/Navbar';
 
 type PromptStatus = 'pending' | 'completed' | 'canceled';
@@ -39,6 +38,7 @@ const MIN_FRAMES = 1;
 const MAX_FRAMES = 1000;
 
 const Page = () => {
+  const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [promptHistory, setPromptHistory] = useState<PromptItem[]>([]);

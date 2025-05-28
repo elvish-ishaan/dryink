@@ -1,12 +1,14 @@
 import { createClient } from 'redis';
 
 export const redisPublisher = createClient({
-    url:  "rediss://default:AUHMAAIjcDE4YTJkZmI4ZDNmODk0MGViOGQ4MDQ2ZjRmYWQ0NTYwZnAxMA@composed-cobra-16844.upstash.io:6379"
+    url:  process.env.REDIS_URL as string,
 });
 
 async function connectRedis() {
+    console.log( !process.env.REDIS_URL,'redis url')
     redisPublisher.on('error', err => console.log('Redis Client Error', err));
     await redisPublisher.connect();
+    console.log('Redis Client Connected');
 }
 
 connectRedis();
