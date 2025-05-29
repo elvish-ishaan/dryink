@@ -1,12 +1,12 @@
-import Features from "@/components/herosection/Features";
+import { redirect } from "next/navigation";
+import Featured from "@/components/herosection/Features";
 import HeroSection from "@/components/herosection/Herosection";
-import Image from "next/image";
 
-export default function Home() {
+export default function RootPage() {
   return (
-    <div className="">
-      <HeroSection/>
-      <Features/>
+    <div>
+      <HeroSection />
+      <Featured />
     </div>
-  );
+  )
 }
