@@ -17,10 +17,12 @@ app.use('/api/v1/prompt', promptRoute)
 app.use('/api/v1/editor', editorRoute)
 
 app.get("/", (req, res) => {
-  res.send("Hello World!");
+ res.json({
+  success: true,
+  message: 'server is running'
+ })
 });
 
 app.listen( process.env.PORT, () => {
-    console.log('hello')
   console.log(`Server is running on port ${process.env.PORT}`);
 });

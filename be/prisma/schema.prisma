@@ -1,8 +1,4 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
   provider = "prisma-client-js"
@@ -12,4 +8,37 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+enum AuthProvider {
+  CREDENTIALS
+  GOOGLE
+  GITHUB
+}
+
+model User {
+  id  String @default(uuid()) @unique
+  email String
+  password String?
+  name String?
+  authProvider  AuthProvider  
+  chatSessions ChatSession[]
+  createdOn  DateTime @default(now())
+}
+
+model ChatSession {
+  id  String @default(uuid()) @unique
+  userId String
+  User User @relation(fields: [userId], references: [id])
+  date  DateTime @default(now())
+  chats Chat[]
+}
+
+model Chat {
+  id String @default(uuid()) @unique
+  chatSessionId String
+  chatSession ChatSession @relation(fields: [chatSessionId], references: [id])
+  prompt String
+  responce String
+  genUrl String
 }
