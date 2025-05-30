@@ -1,1 +1,1 @@
-{"root":["./src/index.ts"],"version":"5.8.3"}
+{"root":["./src/index.ts","./src/client/prismaclient.ts","./src/configs/redisconfig.ts","./src/configs/s3client.ts","./src/controllers/authcontroller.ts","./src/controllers/editorcontroller.ts","./src/controllers/promcontroller.ts","./src/lib/prompts.ts","./src/lib/utils.ts","./src/middleware/auth.ts","./src/routes/auth.ts","./src/routes/editor.ts","./src/routes/prompt.ts","./src/types/express.d.ts"],"version":"5.8.3"}

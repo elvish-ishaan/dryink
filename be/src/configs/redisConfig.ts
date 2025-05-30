@@ -11,4 +11,4 @@ async function connectRedis() {
     console.log('Redis Client Connected');
 }
 
-connectRedis();
+//connectRedis();

@@ -1,8 +1,6 @@
 
-
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -10,18 +8,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum AuthProvider {
-  CREDENTIALS
-  GOOGLE
-  GITHUB
-}
 
 model User {
-  id  String @default(uuid()) @unique
-  email String
+  id  String @default(uuid()) @id 
+  email String @unique
   password String?
   name String?
-  authProvider  AuthProvider  
+  authProvider  String?  
   chatSessions ChatSession[]
   createdOn  DateTime @default(now())
 }

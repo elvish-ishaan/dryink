@@ -1,15 +1,17 @@
 import { NextAuthOptions, Session, User } from 'next-auth';
-import GoogleProvider from 'next-auth/providers/google';
+// import GoogleProvider from 'next-auth/providers/google';
 import GithubProvider from "next-auth/providers/github"
 import CredentialsProvider from 'next-auth/providers/credentials';
 import axios from 'axios';
+import jwt from 'jsonwebtoken'
 
 
-if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SEC || !process.env.NEXTAUTH_SECRET) {
-    throw new Error('Missing required environment variables.');
-}
+// if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SEC || !process.env.NEXTAUTH_SECRET) {
+//     throw new Error('Missing required environment variables.');
+// }
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL as string;
+const BACKEND_URL = 'http://localhost:5000/api/v1'
+const JWT_SECRET = process.env.NEXTAUTH_SECRET!;
 
 export const authOptions: NextAuthOptions = {
     secret: process.env.NEXTAUTH_SECRET,
@@ -54,7 +56,7 @@ export const authOptions: NextAuthOptions = {
         }),
     ],
     pages: {
-        signIn: '/auth/login',
+        signIn: '/login',
         // signOut: '/',
     },
     session: {
@@ -64,20 +66,38 @@ export const authOptions: NextAuthOptions = {
     jwt: {
         secret: process.env.NEXTAUTH_SECRET,
     },
+    
     callbacks: {
-        async signIn({ user, profile }): Promise<boolean> {
+        async jwt({ token, user }) {
+          // Only create custom access token on initial login
+          if (user) {
+            token.id = user.id;
+            token.email = user.email;
+
+            // Create your own access token
+            const customAccessToken = jwt.sign(
+        {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+        },
+        JWT_SECRET,
+        {
+          expiresIn: '1h',
+        }
+            );
+
+            token.customAccessToken = customAccessToken;
+          }
+
+          return token;
+        },
+
+        async signIn({ user }): Promise<boolean> {
             if (user?.email) {
                 try {
-                    console.log(user,'this is user', profile, 'this is profile')
-                    // const existingUser = await prisma.user.findUnique({ where: { email: user.email } });
-                    // if (!existingUser) {
-                    //     await prisma.user.create({
-                    //         data: {
-                    //             email: user.email,
-                    //             name: user.name || profile?.name || 'Guest',
-                    //         },
-                    //     });
-                    // }
+                    console.log(user,'this is user')
+                    //check if user not exists then create new user
                     return true;
                 } catch (error) {
                     console.error('Error in signIn callback:', error);
@@ -87,9 +107,12 @@ export const authOptions: NextAuthOptions = {
             return true;
         },
         async session({ session, token }): Promise<Session> {
+            console.log(session,'sessinon.......', 'token:',token)
             if (session?.user && token.email) {
-                session.user.email = token.email as string;
-                session.user.name = token.name as string;
+               // Expose custom token to frontend
+               session.user.id = token.id;
+               session.user.email = token.email;
+               session.user.accessToken = token.customAccessToken as string;
             }
             return session;
         },
