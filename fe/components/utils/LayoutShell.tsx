@@ -7,7 +7,7 @@ import { ReactNode } from "react";
 
 export default function LayoutShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const hideLayout = pathname.startsWith("/login") || pathname.startsWith("/signup");
+  const hideLayout = pathname.startsWith("/login") || pathname.startsWith("/signup") || pathname.startsWith("/dashboard");
 
   return (
     <>

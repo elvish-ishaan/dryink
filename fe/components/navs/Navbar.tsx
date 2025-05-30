@@ -94,13 +94,13 @@ const Navbar = () => {
           {/* Auth Buttons */}
           <motion.div layoutId="signin" className="flex gap-2">
             <Button
-              variant="secondary"
+              variant="outline"
               className="rounded-2xl text-neutral-800 dark:text-white cursor-pointer"
             >
               Login
             </Button>
             <Button
-              variant="secondary"
+              variant="outline"
               className="rounded-2xl text-neutral-800 dark:text-white cursor-pointer"
             >
               Sign Up
