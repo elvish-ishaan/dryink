@@ -89,10 +89,6 @@ export default function VideoGenerationCard() {
                     className="w-full"
                   />
                 </div>
-                {/* <Button onClick={handlePreview}>Preview</Button>
-                <AudioRecorder setStartVideo={setStartVideo}
-                previewAudioStart={previewAudioStart}
-                /> */}
                 <div className="flex gap-2 w-full max-w-3xl justify-center">
                   <Button 
                     onClick={handleUndo} 

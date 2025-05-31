@@ -28,8 +28,6 @@ export default function Sidebar() {
           className="flex items-center p-2 space-x-2"
         >{item.prompt}        
         </Link>
-
-
       ))}
     </div>
   );

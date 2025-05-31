@@ -8,16 +8,14 @@ import {
   CardContent,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Download, Loader2, Undo2, Redo2, AlertCircle } from 'lucide-react';
+import { Download, Undo2, Redo2 } from 'lucide-react';
 import clsx from 'clsx';
 import InputCard from '@/components/dashboard/InputCard';
+import { useSession } from 'next-auth/react';
 
 type PromptStatus = 'pending' | 'completed' | 'canceled';
 
@@ -47,9 +45,6 @@ const Page = () => {
   const [initPrompt, setInitPrompt] = useState(false);
   const { data: session } = useSession();
   const [chatSessionId, setChatSessionId] = useState<string | null>(null);
-
-  // const [startVideo, setStartVideo] = useState(false);
-  // const [previewAudioStart, setPreviewAudioStart] = useState(false);
 
   // Parameters with validation
   const [fps, setFps] = useState<number>(30);
@@ -274,26 +269,6 @@ const Page = () => {
 
   const canUndo = videoHistory.currentIndex > 0;
   const canRedo = videoHistory.currentIndex < videoHistory.urls.length - 1;
-
-  //handing video atuoplay when recorder started
-  // useEffect(() => {
-  //   if (startVideo) {
-  //     const video = document.querySelector('video') as HTMLVideoElement;
-  //     video.play();
-  //   }
-  // }, [startVideo]);
-
-  //handling prevew
-  // const handlePreview = () => {
-  //   setPreviewAudioStart(true);
-  // };
-
-  // Effect to play the video when previewAudioStart becomes true
-  // useEffect(() => {
-  //   if (previewAudioStart && videoRef.current) {
-  //     videoRef.current.play();
-  //   }
-  // }, [previewAudioStart]);
 
   return (
     <div className="flex flex-col h-screen bg-neutral-950 text-white">
