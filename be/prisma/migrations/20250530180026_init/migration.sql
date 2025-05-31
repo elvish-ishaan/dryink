@@ -27,6 +27,9 @@ CREATE TABLE "Chat" (
 );
 
 -- CreateIndex
+CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "ChatSession_id_key" ON "ChatSession"("id");
 
 -- CreateIndex

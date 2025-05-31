@@ -19,11 +19,13 @@
     "@prisma/client": "^6.8.2",
     "@types/cors": "^2.8.18",
     "@types/express": "^5.0.1",
+    "@types/jsonwebtoken": "^9.0.9",
     "@types/uuid": "^10.0.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
     "openai": "^4.98.0",
     "redis": "^5.0.1",
     "uuid": "^11.1.0"

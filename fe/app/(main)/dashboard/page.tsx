@@ -19,7 +19,6 @@ import { Download, Loader2, Undo2, Redo2, AlertCircle } from 'lucide-react';
 import clsx from 'clsx';
 import InputCard from '@/components/dashboard/InputCard';
 
-
 type PromptStatus = 'pending' | 'completed' | 'canceled';
 
 interface PromptItem {
@@ -46,6 +45,8 @@ const Page = () => {
   const [currentVideoUrl, setCurrentVideoUrl] = useState<string | null>(null);
   const [currentResponse, setCurrentResponse] = useState<string>('');
   const [initPrompt, setInitPrompt] = useState(false);
+  const { data: session } = useSession();
+  const [chatSessionId, setChatSessionId] = useState<string | null>(null);
 
   // const [startVideo, setStartVideo] = useState(false);
   // const [previewAudioStart, setPreviewAudioStart] = useState(false);
@@ -192,6 +193,7 @@ const Page = () => {
 
     const body = isFollowUp
       ? {
+          chatSessionId,
           followUprompt: prompt,
           previousGenRes: currentResponse,
           height,
@@ -210,7 +212,7 @@ const Page = () => {
     try {
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', "Authorization": `Bearer ${session?.user?.accessToken}` }, 
         body: JSON.stringify(body),
       });
       console.log(response,'getting response from be')
@@ -220,6 +222,9 @@ const Page = () => {
       setLoading(false);
 
       if (data.success) {
+        if(!isFollowUp){
+          setChatSessionId(data.data?.chatSessionId)
+        }
         const videoUrl = data.data?.signedUrl;
         const genRes = data.data?.genRes;
         const returnedPrompt = data.data?.prompt || prompt;
