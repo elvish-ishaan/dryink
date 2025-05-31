@@ -26,9 +26,20 @@ export type ErrorState = {
     frameCount: string;
   };
 
+interface InputCardProps {
+    onSubmit: (prompt: string, params: {
+        width: number;
+        height: number;
+        fps: number;
+        frameCount: number;
+    }, isFollowUp?: boolean) => Promise<{
+        videoUrl: string;
+        genRes: string;
+        prompt: string;
+    }>;
+}
 
-export default function InputCard() {
-
+export default function InputCard({ onSubmit }: InputCardProps) {
     const [prompt, setPrompt] = useState('');
     const [loading, setLoading] = useState(false);
     const [width, setWidth] = useState<number>(800);
@@ -99,98 +110,36 @@ export default function InputCard() {
     });
     };   
 
-    const handlePrompt = async (isFollowUp = false) => {
+    const handleSubmit = async (isFollowUp = false) => {
         if (!validateInputs()) {
-          Object.values(errors).forEach(error => {
-            if (error) toast.error(error);
-          });
-          return;
+            Object.values(errors).forEach(error => {
+                if (error) toast.error(error);
+            });
+            return;
         }
-    
-        const timestamp = Date.now();
-        const newPrompt: PromptItem = {
-          prompt,
-          status: 'pending',
-          timestamp,
-        };
-        setPromptHistory((prev) => [ ...prev, newPrompt]);
-        setLoading(true);
-    
-        const endpoint = isFollowUp
-          ? `${BACKEND_BASE_URL}/prompt/followUpPrompt`
-          : `${BACKEND_BASE_URL}/prompt`;
-    
-        const body = isFollowUp
-          ? {
-              followUprompt: prompt,
-              previousGenRes: currentResponse,
-              height,
-              width,
-              fps,
-              frameCount,
-            }
-          : {
-              prompt,
-              height,
-              width,
-              fps,
-              frameCount,
-            };
-    
-        try {
-          const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body),
-          });
-          console.log(response,'getting response from be')
-    
-          const data = await response.json();
-          console.log(data,'getting data from be')
-          setLoading(false);
-    
-          if (data.success) {
-            const videoUrl = data.data?.signedUrl;
-            const genRes = data.data?.genRes;
-            const returnedPrompt = data.data?.prompt || prompt;
-            
-            setCurrentVideoUrl(videoUrl);
-            setCurrentResponse(genRes);
-            setPrompt(returnedPrompt);
-            setInitPrompt(true);
-    
-            // Add to undo/redo history
-            addToVideoHistory(videoUrl, returnedPrompt, genRes);
-    
-            setPromptHistory((prev) =>
-              prev.map((item) =>
-                item.timestamp === timestamp
-                  ? { ...item, status: 'completed', videoUrl, genRes }
-                  : item
-              )
-            );
-          } else {
-            setPromptHistory((prev) =>
-              prev.map((item) =>
-                item.timestamp === timestamp ? { ...item, status: 'canceled' } : item
-              )
-            );
-            toast.error('Generation failed');
-          }
-        } catch (err) {
-          setLoading(false);
-          console.error(err);
-          toast.error('Something went wrong');
-          setPromptHistory((prev) =>
-            prev.map((item) =>
-              item.timestamp === timestamp ? { ...item, status: 'canceled' } : item
-            )
-          );
-        }
-      };
-    const [promptHistory, setPromptHistory] = useState<PromptItem[]>([]);
 
-    return(
+        setLoading(true);
+        try {
+            const result = await onSubmit(prompt, {
+                width,
+                height,
+                fps,
+                frameCount
+            }, isFollowUp);
+
+            // Reset form after successful submission
+            if (!isFollowUp) {
+                setPrompt('');
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error('Failed to generate video');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
         <div className="space-y-2">
             <AnimatedPromptInput 
             prompt={prompt}
@@ -267,18 +216,16 @@ export default function InputCard() {
             
             <div className="space-y-1">
                 <Select 
-                onValueChange={(v) => setFps(Number(v))} 
-                defaultValue={String(fps)}
+                value={fps.toString()}
+                onValueChange={(value) => setFps(+value)}
                 >
                 <SelectTrigger className="w-full ">
                     <SelectValue placeholder="FPS" />
                 </SelectTrigger>
                 <SelectContent className="bg-neutral-800 ">
-                    {[24, 30, 60].map((f) => (
-                    <SelectItem className="hover:bg-neutral-700" key={f} value={String(f)}>
-                        {f} FPS
-                    </SelectItem>
-                    ))}
+                    <SelectItem className="hover:bg-neutral-700" value="24">24 FPS</SelectItem>
+                    <SelectItem className="hover:bg-neutral-700" value="30">30 FPS</SelectItem>
+                    <SelectItem className="hover:bg-neutral-700" value="60">60 FPS</SelectItem>
                 </SelectContent>
                 </Select>
                 <div className="text-xs text-muted-foreground">
@@ -319,20 +266,35 @@ export default function InputCard() {
             </div>
             </div>
               
-            <div className="flex gap-2">
+            <div className="flex gap-2 justify-end">
             <Button 
-            disabled={loading} 
-            onClick={() => handlePrompt(initPrompt)} 
-            className="flex-1 relative overflow-hidden mt-3"
+            onClick={() => handleSubmit(true)}
+            variant="outline"
+            disabled={loading}
             >
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {initPrompt ? 'Follow-up' : 'Generate'}
-
-            {/* Glow Effect */}
-            {/* <span className="pointer-events-none absolute inset-x-0 bottom-0 h-2 w-4/5 mx-auto bg-gradient-to-r from-transparent via-blue-400 to-transparent blur-md opacity-70 animate-pulse" /> */}
-            <span className="absolute inset-0 rounded-full bg-[image:radial-gradient(75%_100%_at_50%_0%,rgba(56,189,248,0.6)_0%,rgba(56,189,248,0)_75%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100"></span>
+            {loading ? (
+                <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating...
+                </>
+            ) : (
+                'Follow Up'
+            )}
             </Button>
 
+            <Button 
+            onClick={() => handleSubmit(false)}
+            disabled={loading}
+            >
+            {loading ? (
+                <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating...
+                </>
+            ) : (
+                'Generate'
+            )}
+            </Button>
             </div>
         </div>
     )

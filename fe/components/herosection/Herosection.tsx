@@ -79,7 +79,7 @@ const HeroSection = () => {
         {/* Animated Button */}
         <div className="space-x-4 flex justify-center flex-wrap gap-4">
           <Button
-            onClick={() => router.push("/dashboard2")}
+            onClick={() => router.push("/dashboard")}
             className="animate-button mt-5 cursor-pointer bg-gradient-to-r from-violet-500 to-purple-500 hover:bg-purple-700 text-white px-12 py-6 rounded-full text-sm font-semibold focus:outline-none focus-visible:ring-4 focus-visible:ring-purple-400"
             aria-label="Get a demo of Richat AI"
             style={{ opacity: 0, filter: "blur(4px)", transform: "translateY(20px) scale(0.8)" }}

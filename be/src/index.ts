@@ -5,6 +5,7 @@ import cors from "cors";
 import promptRoute from './routes/prompt'
 import editorRoute from './routes/editor'
 import authRoute from './routes/auth'
+import sessionRoute from './routes/session'
 
 dotenv.config();
 
@@ -17,6 +18,7 @@ app.use(cors())
 app.use('/api/v1/prompt', promptRoute)
 app.use('/api/v1/editor', editorRoute)
 app.use('/api/v1/auth', authRoute)
+app.use('/api/v1/sessions', sessionRoute)
 
 app.get("/", (req, res) => {
  res.json({
