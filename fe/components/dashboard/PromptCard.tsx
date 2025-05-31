@@ -6,8 +6,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { PromptItem } from "@/types/types";
 import { useState } from "react";
-import { useSession } from "next-auth/react";
-import { BACKEND_BASE_URL } from "@/lib/constants";
 
 interface PromptCardProps {
   onSubmit: (prompt: string, params: {
@@ -24,8 +22,6 @@ interface PromptCardProps {
 
 export default function PromptCard({ onSubmit }: PromptCardProps) {
     const [promptHistory, setPromptHistory] = useState<PromptItem[]>([]);
-    const { data: session } = useSession();
-    const [chatSessionId, setChatSessionId] = useState<string | null>(null);
 
     const handlePromptSubmit = async (prompt: string, params: {
         width: number;
@@ -43,12 +39,11 @@ export default function PromptCard({ onSubmit }: PromptCardProps) {
 
         try {
             const result = await onSubmit(prompt, params, isFollowUp);
-            
             // Update prompt history with the result
             setPromptHistory((prev) =>
                 prev.map((item) =>
                     item.timestamp === timestamp
-                        ? { ...item, status: 'completed', videoUrl: result.videoUrl, genRes: result.genRes }
+                        ? { ...item, status: 'completed', videoUrl: result?.videoUrl, genRes: result?.genRes }
                         : item
                 )
             );
@@ -61,17 +56,16 @@ export default function PromptCard({ onSubmit }: PromptCardProps) {
                     item.timestamp === timestamp ? { ...item, status: 'canceled' } : item
                 )
             );
-            throw err;
         }
     };
 
     return (
-        <Card className="flex flex-col h-full bg-neutral-800">
-            <CardHeader className="py-2">
+        <Card className="flex flex-col rounded-none h-full bg-neutral-800">
+            <CardHeader className="">
                 <CardTitle>Prompt History</CardTitle>
             </CardHeader>
 
-            <CardContent className="flex-1 flex flex-col min-h-0 p-2">
+            <CardContent className="flex-1 flex flex-col h-full p-2">
                 <ScrollArea className="flex-1 border p-2 min-h-0">
                     {promptHistory.length === 0 ? (
                         <p className="text-sm text-muted-foreground">No prompts yet.</p>

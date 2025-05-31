@@ -21,6 +21,7 @@ const Page = () => {
     urls: [],
     currentIndex: -1,
   });
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
   useEffect(() => {
     const handleResize = () => {
@@ -47,6 +48,7 @@ const Page = () => {
 
       const body = isFollowUp
         ? {
+            chatSessionId: sessionId,
             followUprompt: prompt,
             previousGenRes: currentResponse,
             ...params
@@ -56,6 +58,8 @@ const Page = () => {
             ...params
           };
 
+      console.log(body,'sending body...........')
+
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 
@@ -64,18 +68,35 @@ const Page = () => {
         },
         body: JSON.stringify(body),
       });
-
       const data = await response.json();
+      console.log(data,'getting data from backend')
 
       if (!data.success) {
-        throw new Error(data.message || 'Generation failed');
+        //show toast
+        toast.error(data.message);
+        return;
       }
 
-      const result = {
-        videoUrl: data.data.signedUrl,
-        genRes: data.data.genRes,
-        prompt: data.data.prompt || prompt
-      };
+      if(data.data?.chatSessionId){
+        setSessionId(data.data?.chatSessionId);
+      }
+
+      //include sessionId if initial prompt
+      let result;
+      if(isFollowUp){
+        result={
+          // sessionId: data.data?.chatSessionId,
+          videoUrl: data.data.signedUrl,
+          genRes: data.data.genRes,
+          prompt: data.data.prompt || prompt
+        }
+      }else {
+        result = {
+          videoUrl: data.data.signedUrl,
+          genRes: data.data.genRes,
+          prompt: data.data.prompt || prompt
+        };
+      }
 
       setCurrentVideoUrl(result.videoUrl);
       setCurrentResponse(result.genRes);
@@ -97,7 +118,6 @@ const Page = () => {
     } catch (err) {
       console.error(err);
       toast.error('Failed to generate video');
-      throw err;
     } finally {
       setLoading(false);
     }
@@ -151,7 +171,7 @@ const Page = () => {
       </div>
 
       <div className="flex-1 flex bg-neutral-900">
-        <div className="w-3/5 border-r border-neutral-800">
+        <div className="w-3/5 border-neutral-800">
           <PromptCard onSubmit={handlePromptSubmit} />
         </div>
 

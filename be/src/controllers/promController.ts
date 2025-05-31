@@ -163,8 +163,9 @@ export const handlePrompt = async (req: Request, res: Response) => {
 
 // --- Follow-up Prompt Handler ---
 export const handleFollowUpPrompt = async (req: Request, res: Response) => {
+  console.log(req.body,'this is req body is follow up controller')
   try {
-    const { followUprompt, previousGenRes, height, width, fps, frameCount } = req.body;
+    const { followUprompt, previousGenRes, height, width, fps, frameCount, chatSessionId } = req.body;
 
     if (!followUprompt || !previousGenRes || !height || !width || !fps || !frameCount) {
       res.status(400).json({
@@ -206,7 +207,7 @@ export const handleFollowUpPrompt = async (req: Request, res: Response) => {
       // Create follow-up chat
       const chat = await prisma.chat.create({
         data: {
-          chatSessionId: req.body?.chatSessionId,
+          chatSessionId: chatSessionId,
           prompt: followUprompt,
           responce: response.text as string,
           genUrl: signedUrl,

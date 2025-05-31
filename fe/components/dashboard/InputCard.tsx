@@ -5,10 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Button } from "../ui/button";
 import { useState } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
-import { toast } from "sonner";
-import { BACKEND_BASE_URL } from "@/lib/constants";
 import AnimatedPromptInput from "./AnimatedPrompt";
-import { PromptItem } from "@/types/types";
 
 
 // Input validation constraints
@@ -40,7 +37,7 @@ export default function InputCard({ onSubmit }: InputCardProps) {
     const [width, setWidth] = useState(512);
     const [height, setHeight] = useState(512);
     const [fps, setFps] = useState(24);
-    const [frameCount, setFrameCount] = useState(24);
+    const [frameCount, setFrameCount] = useState(200);
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState<ErrorState>({
         prompt: '',
@@ -99,7 +96,7 @@ export default function InputCard({ onSubmit }: InputCardProps) {
     };
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-2 mt-3">
             <AnimatedPromptInput 
             prompt={prompt}
             setPrompt={setPrompt}

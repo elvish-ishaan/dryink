@@ -3,6 +3,8 @@ import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { Skeleton } from "../ui/skeleton";
 import { useRef } from "react";
+import { toast } from "sonner";
+import Loader from "../loaders/Loader";
 
 interface VideoGenerationCardProps {
     currentVideoUrl: string | null;
@@ -35,10 +37,14 @@ export default function VideoGenerationCard({
     };
 
     return (
-        <Card className="flex bg-neutral-800 flex-col h-full">
-            <CardContent className="flex flex-col w-full h-full p-2">
+        <Card className="flex bg-neutral-800 rounded-none flex-col h-full">
+            <CardContent className="flex flex-col w-full h-full p-2 items-center justify-center">
                 {loading ? (
-                    <Skeleton className="w-full max-w-3xl aspect-video" />
+                    <div className=" flex flex-col gap-10 items-center">
+                        <Loader/>
+                        <span className=" text-muted-foreground font-semibold">Hold on!, Your video is being generated...</span>
+                    </div>
+                    // <Skeleton className="w-full max-w-3xl aspect-video" />
                 ) : currentVideoUrl ? (
                     <>
                         <div className="w-full max-w-3xl">

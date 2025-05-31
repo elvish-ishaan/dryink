@@ -1,10 +1,7 @@
 export const placeholders = [
-    "Describe your ideal vacation...",
-    "What's your favorite movie genre?",
-    "Enter a funny tweet idea...",
-    "Summarize this article...",
-    "Ask a question about React...",
-    "Type something creative..."
+    "Demonestrate client-server arititecture...",
+    "Show how photoelectric effect works...",
+    "Step by step demonestration of photosynthesis...",
   ];
 
 

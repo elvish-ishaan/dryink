@@ -1,17 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { 
-  LogOut, 
-  Menu, 
-  Trash2,
-} from "lucide-react";
+import { LogOut, Trash2 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { AvatarFallback, AvatarImage, Avatar } from "../ui/avatar";
 import { Button } from "../ui/button";
 import { BACKEND_BASE_URL } from "@/lib/constants";
 import { toast } from "sonner";
+import DashLoader from "../loaders/DashLoader";
 
 interface ChatSession {
   id: string;
@@ -26,24 +23,27 @@ interface ChatSession {
 
 export default function Sidebar() {
   const { data: session } = useSession();
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetchSessions = async () => {
       try {
+        setLoading(true);
         const response = await fetch(`${BACKEND_BASE_URL}/sessions`, {
           headers: {
-            Authorization: `Bearer ${session?.user?.accessToken}`
-          }
+            Authorization: `Bearer ${session?.user?.accessToken}`,
+          },
         });
         const data = await response.json();
         if (data.success) {
           setChatSessions(data.data);
         }
       } catch (error) {
-        console.error('Failed to fetch sessions:', error);
-        toast.error('Failed to load chat sessions');
+        console.error("Failed to fetch sessions:", error);
+        toast.error("Failed to load chat sessions");
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -55,104 +55,98 @@ export default function Sidebar() {
   const handleDeleteSession = async (sessionId: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     try {
       const response = await fetch(`${BACKEND_BASE_URL}/sessions/${sessionId}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-          Authorization: `Bearer ${session?.user?.accessToken}`
-        }
+          Authorization: `Bearer ${session?.user?.accessToken}`,
+        },
       });
-      
+
       const data = await response.json();
       if (data.success) {
         setChatSessions(prev => prev.filter(s => s.id !== sessionId));
-        toast.success('Session deleted successfully');
+        toast.success("Session deleted successfully");
       }
     } catch (error) {
-      console.error('Failed to delete session:', error);
-      toast.error('Failed to delete session');
+      console.error("Failed to delete session:", error);
+      toast.error("Failed to delete session");
     }
   };
 
   const handleSignOut = async () => {
-    await signOut({ callbackUrl: '/' });
+    await signOut({ callbackUrl: "/" });
   };
 
   return (
-    <div className="h-full bg-neutral-800">
-      <Button
-        variant="ghost"
-        size="icon"
-        className="md:hidden absolute top-4 left-4 z-50"
-        onClick={() => setMobileOpen(!mobileOpen)}
-      >
-        <Menu className="h-6 w-6" />
-      </Button>
-
-      <div className="flex flex-col h-full">
-        <div className="p-4 border-b border-neutral-700">
-          <div className="flex items-center space-x-3">
-            <Avatar>
-              <AvatarImage src={session?.user?.image || ''} />
-              <AvatarFallback>
-                {session?.user?.name?.charAt(0) || 'U'}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">
-                {session?.user?.name || 'User'}
-              </p>
-              <p className="text-xs text-muted-foreground truncate">
-                {session?.user?.email}
-              </p>
-            </div>
+    <aside className="h-full bg-neutral-800 border-r border-neutral-800 flex flex-col text-foreground">
+      {/* User Info */}
+      <div className="p-4 border-b border-neutral-800">
+        <div className="flex items-center space-x-3">
+          <Avatar>
+            <AvatarImage src={session?.user?.image || ""} />
+            <AvatarFallback>
+              {session?.user?.name?.charAt(0) || "U"}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium truncate">{session?.user?.name || "User"}</p>
+            <p className="text-xs text-muted-foreground truncate">{session?.user?.email}</p>
           </div>
-        </div>
-
-        <div className="flex-1 overflow-auto">
-          <div className="p-4">
-            <h3 className="text-sm font-medium mb-2">Sessions</h3>
-            <div>
-              {chatSessions.map((session) => (
-                <Link
-                  key={session.id}
-                  href={`/dashboard/${session.id}`}
-                  className="flex items-center justify-between p-2 hover:bg-neutral-700"
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm truncate">
-                      {session.chats[0]?.prompt || 'New Session'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(session.date).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={(e) => handleDeleteSession(session.id, e)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="p-4 border-t border-neutral-700">
-          <Button
-            variant="ghost"
-            className="w-full justify-start"
-            onClick={handleSignOut}
-          >
-            <LogOut className="h-4 w-4 mr-2" />
-            Sign Out
-          </Button>
         </div>
       </div>
-    </div>
+
+      {/* Sessions */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-2">
+        <h3 className="text-sm font-semibold text-muted-foreground">Sessions</h3>
+        {loading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="scale-75">
+              <DashLoader />
+            </div>
+          </div>
+        ) : chatSessions.length > 0 ? (
+          chatSessions.map((session) => (
+            <Link
+              key={session.id}
+              href={`/dashboard/${session.id}`}
+              className="flex items-center justify-between p-2 rounded-md bg-neutral-700 hover:bg-neutral-600 transition-colors"
+            >
+              <div className="flex-1 min-w-0">
+                <p className="text-sm truncate">
+                  {session.chats[0]?.prompt || "New Session"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {new Date(session.date).toLocaleDateString()}
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={(e) => handleDeleteSession(session.id, e)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </Link>
+          ))
+        ) : (
+          <p className="text-sm text-muted-foreground">No sessions found.</p>
+        )}
+      </div>
+
+      {/* Sign Out */}
+      <div className="p-4 border-t border-neutral-800 ">
+        <Button
+          variant="ghost"
+          className="w-full justify-start bg-gray-800"
+          onClick={handleSignOut}
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          Sign Out
+        </Button>
+      </div>
+    </aside>
   );
 }
