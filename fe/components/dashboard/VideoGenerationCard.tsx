@@ -38,23 +38,31 @@ export default function VideoGenerationCard({
     };
 
     return (
-        <Card className="flex bg-neutral-800 flex-col items-center justify-center overflow-hidden h-full">
-            <CardContent className="flex flex-col items-center justify-center w-full h-full p-4 gap-3">
+        <Card className="flex bg-neutral-800 flex-col h-full">
+            <CardContent className="flex flex-col w-full h-full p-2">
                 {loading ? (
-                    <Skeleton className="w-full max-w-3xl aspect-video rounded-md" />
+                    <Skeleton className="w-full max-w-3xl aspect-video" />
                 ) : currentVideoUrl ? (
                     <>
-                        <div className="w-full max-w-3xl overflow-hidden rounded-md shadow-lg">
+                        <div className="w-full max-w-3xl">
                             <video
                                 ref={videoRef}
                                 key={currentVideoUrl}
                                 src={currentVideoUrl}
                                 controls
                                 autoPlay
-                                className="w-full"
+                                playsInline
+                                className="w-full aspect-video"
+                                onError={(e) => {
+                                    console.error('Video error:', e);
+                                    toast.error('Error loading video');
+                                }}
+                                onLoadedData={() => {
+                                    console.log('Video loaded successfully');
+                                }}
                             />
                         </div>
-                        <div className="flex gap-2 w-full max-w-3xl justify-center">
+                        <div className="flex gap-1 w-full max-w-3xl justify-center mt-1">
                             <Button 
                                 onClick={onUndo} 
                                 variant="outline" 
@@ -80,14 +88,14 @@ export default function VideoGenerationCard({
                                 Redo
                             </Button>
                         </div>
-                        <div className="text-xs text-muted-foreground text-center mt-1">
+                        <div className="text-xs text-muted-foreground text-center mt-1 max-w-3xl">
                             {prompt}
                         </div>
                     </>
                 ) : (
                     <div className="flex flex-col items-center justify-center text-center h-full">
                         <p className="text-muted-foreground text-sm">Generated video will appear here</p>
-                        <p className="text-xs text-muted-foreground mt-2">
+                        <p className="text-xs text-muted-foreground mt-1">
                             Enter a prompt and adjust parameters to generate a video
                         </p>
                     </div>

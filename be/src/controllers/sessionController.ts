@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { prisma } from "../client/prismaClient";
 
 // Get all sessions for a user
-export const getUserSessions = async (req: Request, res: Response) => {
+export const getUserSessions = async (req: Request, res: Response): Promise<void> => {
   try {
     const sessions = await prisma.chatSession.findMany({
       where: {
@@ -11,7 +11,7 @@ export const getUserSessions = async (req: Request, res: Response) => {
       include: {
         chats: {
           orderBy: {
-            createdAt: 'asc'
+            id: 'asc'
           }
         }
       },
@@ -34,7 +34,7 @@ export const getUserSessions = async (req: Request, res: Response) => {
 };
 
 // Get a specific session with its chats
-export const getSessionById = async (req: Request, res: Response) => {
+export const getSessionById = async (req: Request, res: Response): Promise<void> => {
   try {
     const { sessionId } = req.params;
 
@@ -46,17 +46,18 @@ export const getSessionById = async (req: Request, res: Response) => {
       include: {
         chats: {
           orderBy: {
-            createdAt: 'asc'
+            id: 'asc'
           }
         }
       }
     });
 
     if (!session) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: 'Session not found'
       });
+      return;
     }
 
     res.json({
@@ -73,7 +74,7 @@ export const getSessionById = async (req: Request, res: Response) => {
 };
 
 // Delete a session
-export const deleteSession = async (req: Request, res: Response) => {
+export const deleteSession = async (req: Request, res: Response): Promise<void> => {
   try {
     const { sessionId } = req.params;
 
@@ -86,10 +87,11 @@ export const deleteSession = async (req: Request, res: Response) => {
     });
 
     if (!session) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: 'Session not found'
       });
+      return;
     }
 
     // Delete all chats in the session first

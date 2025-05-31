@@ -41,63 +41,19 @@ export default function PromptCard({ onSubmit }: PromptCardProps) {
         };
         setPromptHistory((prev) => [...prev, newPrompt]);
 
-        const endpoint = isFollowUp
-            ? `${BACKEND_BASE_URL}/prompt/followUpPrompt`
-            : `${BACKEND_BASE_URL}/prompt`;
-
-        const body = isFollowUp
-            ? {
-                chatSessionId,
-                followUprompt: prompt,
-                previousGenRes: promptHistory[promptHistory.length - 1]?.genRes,
-                ...params
-            }
-            : {
-                prompt,
-                ...params
-            };
-
         try {
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    "Authorization": `Bearer ${session?.user?.accessToken}`
-                },
-                body: JSON.stringify(body),
-            });
+            const result = await onSubmit(prompt, params, isFollowUp);
+            
+            // Update prompt history with the result
+            setPromptHistory((prev) =>
+                prev.map((item) =>
+                    item.timestamp === timestamp
+                        ? { ...item, status: 'completed', videoUrl: result.videoUrl, genRes: result.genRes }
+                        : item
+                )
+            );
 
-            const data = await response.json();
-
-            if (data.success) {
-                if (!isFollowUp) {
-                    setChatSessionId(data.data?.chatSessionId);
-                }
-                const videoUrl = data.data?.signedUrl;
-                const genRes = data.data?.genRes;
-                const returnedPrompt = data.data?.prompt || prompt;
-
-                setPromptHistory((prev) =>
-                    prev.map((item) =>
-                        item.timestamp === timestamp
-                            ? { ...item, status: 'completed', videoUrl, genRes }
-                            : item
-                    )
-                );
-
-                return {
-                    videoUrl,
-                    genRes,
-                    prompt: returnedPrompt
-                };
-            } else {
-                setPromptHistory((prev) =>
-                    prev.map((item) =>
-                        item.timestamp === timestamp ? { ...item, status: 'canceled' } : item
-                    )
-                );
-                throw new Error('Generation failed');
-            }
+            return result;
         } catch (err) {
             console.error(err);
             setPromptHistory((prev) =>
@@ -110,22 +66,21 @@ export default function PromptCard({ onSubmit }: PromptCardProps) {
     };
 
     return (
-        <Card className="flex flex-col overflow-hidden h-full bg-neutral-800">
-            <CardHeader className="py-3">
+        <Card className="flex flex-col h-full bg-neutral-800">
+            <CardHeader className="py-2">
                 <CardTitle>Prompt History</CardTitle>
             </CardHeader>
 
-            <CardContent className="flex-1 flex flex-col min-h-0 gap-3 p-3 overflow-hidden">
-                {/* Chat History */}
-                <ScrollArea className="flex-1 rounded-md border p-2 min-h-0 overflow-auto">
+            <CardContent className="flex-1 flex flex-col min-h-0 p-2">
+                <ScrollArea className="flex-1 border p-2 min-h-0">
                     {promptHistory.length === 0 ? (
-                        <p className="text-sm text-muted-foreground p-2">No prompts yet.</p>
+                        <p className="text-sm text-muted-foreground">No prompts yet.</p>
                     ) : (
                         promptHistory.map((item) => (
                             <div
                                 key={item.timestamp}
                                 className={cn(
-                                    'p-2 rounded-md shadow-sm border text-sm mb-2',
+                                    'p-2 border text-sm mb-1',
                                     item.status === 'completed' && 'border-green-500',
                                     item.status === 'pending' && 'border-yellow-500 font-bold italic',
                                     item.status === 'canceled' && 'border-red-500'
@@ -150,7 +105,6 @@ export default function PromptCard({ onSubmit }: PromptCardProps) {
                     )}
                 </ScrollArea>
 
-                {/* Prompt Input */}
                 <InputCard onSubmit={handlePromptSubmit} />
             </CardContent>
         </Card>
