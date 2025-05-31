@@ -3,24 +3,14 @@
 import { useEffect, useState } from "react";
 import { 
   ChevronLeft, 
-  ChevronRight, 
-  LogOut, 
+  ChevronRight,  
   Menu, 
-  Mail, 
   Trash2,
-  Home,
-  ArrowLeftRight,
-  Clock,
-  ArrowUpRight,
-  User,
-  LogOut as LogOutIcon
-} from "lucide-react";
-import { signOut, useSession } from "next-auth/react";
-import Image from "next/image";
+  } from "lucide-react";
+import {  useSession } from "next-auth/react";
 import Link from "next/link";
 import { AvatarFallback, AvatarImage, Avatar } from "../ui/avatar";
 import { Button } from "../ui/button";
-import { useRouter } from "next/navigation";
 import { BACKEND_BASE_URL } from "@/lib/constants";
 import { toast } from "sonner";
 
@@ -40,7 +30,6 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
-  const router = useRouter();
 
   useEffect(() => {
     const fetchSessions = async () => {

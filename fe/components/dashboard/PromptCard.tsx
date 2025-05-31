@@ -68,6 +68,7 @@ export default function PromptCard({ onSubmit }: PromptCardProps) {
             });
 
             const data = await response.json();
+            console.log(data,'getting responce.........')
 
             if (data.success) {
                 if (!isFollowUp) {

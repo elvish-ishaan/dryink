@@ -2,9 +2,7 @@ import { Download, Redo2, Undo2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { Skeleton } from "../ui/skeleton";
-import { useRef, useState } from "react";
-import { PromptItem } from "@/types/types";
-import { toast } from "sonner";
+import { useRef } from "react";
 
 interface VideoGenerationCardProps {
     currentVideoUrl: string | null;
@@ -19,7 +17,6 @@ interface VideoGenerationCardProps {
 
 export default function VideoGenerationCard({
     currentVideoUrl,
-    currentResponse,
     prompt,
     onUndo,
     onRedo,
