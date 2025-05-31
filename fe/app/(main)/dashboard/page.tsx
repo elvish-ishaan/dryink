@@ -17,8 +17,7 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@
 import { toast } from 'sonner';
 import { Download, Loader2, Undo2, Redo2, AlertCircle } from 'lucide-react';
 import clsx from 'clsx';
-import Navbar from '@/components/navs/Navbar';
-import { useSession } from 'next-auth/react';
+import InputCard from '@/components/dashboard/InputCard';
 
 type PromptStatus = 'pending' | 'completed' | 'canceled';
 
@@ -297,9 +296,8 @@ const Page = () => {
   // }, [previewAudioStart]);
 
   return (
-    <div className="flex flex-col h-screen">
-      {/* Navbar */}
-      <Navbar />
+    <div className="flex flex-col h-screen bg-neutral-950 text-white">
+      
       
       {/* Main Content - adjusted to account for navbar */}
       <div className="flex-1 px-4 py-3 grid gap-3 md:grid-cols-2 grid-cols-1 overflow-hidden">
@@ -345,161 +343,7 @@ const Page = () => {
             </ScrollArea>
 
             {/* Prompt Input */}
-            <div className="space-y-2">
-              <div className="relative">
-                <Textarea
-                  placeholder="Enter prompt..."
-                  value={prompt}
-                  onChange={(e) => {
-                    setPrompt(e.target.value);
-                    if (e.target.value.trim()) {
-                      setErrors(prev => ({ ...prev, prompt: '' }));
-                    }
-                  }}
-                  className={clsx(
-                    "min-h-[60px] resize-none",
-                    errors.prompt && "border-red-500 focus-visible:ring-red-500"
-                  )}
-                  disabled={loading}
-                />
-                {errors.prompt && (
-                  <div className="flex items-center mt-1 text-xs text-red-500">
-                    <AlertCircle className="h-3 w-3 mr-1" />
-                    {errors.prompt}
-                  </div>
-                )}
-              </div>
-              
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                <div className="space-y-1">
-                  <div className="relative">
-                    <Input
-                      type="number"
-                      min={MIN_WIDTH}
-                      max={MAX_WIDTH}
-                      value={width}
-                      onChange={(e) => {
-                        const val = +e.target.value;
-                        setWidth(val);
-                        if (val >= MIN_WIDTH && val <= MAX_WIDTH) {
-                          setErrors(prev => ({ ...prev, width: '' }));
-                        }
-                      }}
-                      placeholder="Width"
-                      className={clsx(
-                        "w-full",
-                        errors.width && "border-red-500 focus-visible:ring-red-500"
-                      )}
-                    />
-                    {errors.width && (
-                      <div className="flex items-center mt-1 text-xs text-red-500">
-                        <AlertCircle className="h-3 w-3 mr-1" />
-                        <span className="truncate">{errors.width}</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    Width ({MIN_WIDTH}-{MAX_WIDTH})
-                  </div>
-                </div>
-                
-                <div className="space-y-1">
-                  <div className="relative">
-                    <Input
-                      type="number"
-                      min={MIN_HEIGHT}
-                      max={MAX_HEIGHT}
-                      value={height}
-                      onChange={(e) => {
-                        const val = +e.target.value;
-                        setHeight(val);
-                        if (val >= MIN_HEIGHT && val <= MAX_HEIGHT) {
-                          setErrors(prev => ({ ...prev, height: '' }));
-                        }
-                      }}
-                      placeholder="Height"
-                      className={clsx(
-                        "w-full",
-                        errors.height && "border-red-500 focus-visible:ring-red-500"
-                      )}
-                    />
-                    {errors.height && (
-                      <div className="flex items-center mt-1 text-xs text-red-500">
-                        <AlertCircle className="h-3 w-3 mr-1" />
-                        <span className="truncate">{errors.height}</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    Height ({MIN_HEIGHT}-{MAX_HEIGHT})
-                  </div>
-                </div>
-                
-                <div className="space-y-1">
-                  <Select 
-                    onValueChange={(v) => setFps(Number(v))} 
-                    defaultValue={String(fps)}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="FPS" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[24, 30, 60].map((f) => (
-                        <SelectItem key={f} value={String(f)}>
-                          {f} FPS
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <div className="text-xs text-muted-foreground">
-                    Frames Per Second
-                  </div>
-                </div>
-                
-                <div className="space-y-1">
-                  <div className="relative">
-                    <Input
-                      type="number"
-                      min={MIN_FRAMES}
-                      max={MAX_FRAMES}
-                      value={frameCount}
-                      onChange={(e) => {
-                        const val = +e.target.value;
-                        setFrameCount(val);
-                        if (val >= MIN_FRAMES && val <= MAX_FRAMES) {
-                          setErrors(prev => ({ ...prev, frameCount: '' }));
-                        }
-                      }}
-                      className={clsx(
-                        "w-full",
-                        errors.frameCount && "border-red-500 focus-visible:ring-red-500"
-                      )}
-                      placeholder="Frames"
-                    />
-                    {errors.frameCount && (
-                      <div className="flex items-center mt-1 text-xs text-red-500">
-                        <AlertCircle className="h-3 w-3 mr-1" />
-                        <span className="truncate">{errors.frameCount}</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    Frame Count ({MIN_FRAMES}-{MAX_FRAMES})
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex gap-2">
-                <Button 
-                  disabled={loading} 
-                  onClick={() => handlePrompt(initPrompt)} 
-                  className="flex-1"
-                >
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {initPrompt ? 'Follow-up' : 'Generate'}
-                </Button>
-              </div>
-            </div>
+            <InputCard/>
           </CardContent>
         </Card>
 
