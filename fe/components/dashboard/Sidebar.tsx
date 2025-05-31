@@ -2,12 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { 
-  ChevronLeft, 
-  ChevronRight,  
+  LogOut, 
   Menu, 
   Trash2,
-  } from "lucide-react";
-import {  useSession } from "next-auth/react";
+} from "lucide-react";
+import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { AvatarFallback, AvatarImage, Avatar } from "../ui/avatar";
 import { Button } from "../ui/button";
@@ -27,7 +26,6 @@ interface ChatSession {
 
 export default function Sidebar() {
   const { data: session } = useSession();
-  const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
 
@@ -77,106 +75,84 @@ export default function Sidebar() {
     }
   };
 
-  const sidebarContent = (
-    <div className="h-full bg-neutral-800 overflow-auto">
-      {chatSessions.map((session) => (
-        <Link
-          key={session.id}
-          href={`/dashboard/${session.id}`}
-          className="flex items-center justify-between p-2 space-x-2 hover:bg-neutral-700 transition-colors"
-        >
-          <div className="flex-1 min-w-0">
-            <p className="text-sm truncate">
-              {session.chats[0]?.prompt || 'New Session'}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {new Date(session.date).toLocaleDateString()}
-            </p>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={(e) => handleDeleteSession(session.id, e)}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </Link>
-      ))}
-    </div>
-  );
+  const handleSignOut = async () => {
+    await signOut({ callbackUrl: '/' });
+  };
 
   return (
-    <>
-      {/* Mobile menu button */}
+    <div className="h-full bg-neutral-800">
       <Button
         variant="ghost"
         size="icon"
-        className="md:hidden fixed top-4 left-4 z-50"
+        className="md:hidden absolute top-4 left-4 z-50"
         onClick={() => setMobileOpen(!mobileOpen)}
       >
         <Menu className="h-6 w-6" />
       </Button>
 
-      {/* Sidebar */}
-      <div
-        className={`
-          fixed top-0 left-0 h-full bg-neutral-800 transition-all duration-300 z-40
-          ${collapsed ? 'w-16' : 'w-64'}
-          ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-        `}
-      >
-        <div className="flex flex-col h-full">
-          {/* User profile */}
-          <div className="p-4 border-b border-neutral-700">
-            <div className="flex items-center space-x-3">
-              <Avatar>
-                <AvatarImage src={session?.user?.image || ''} />
-                <AvatarFallback>
-                  {session?.user?.name?.charAt(0) || 'U'}
-                </AvatarFallback>
-              </Avatar>
-              {!collapsed && (
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">
-                    {session?.user?.name || 'User'}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {session?.user?.email}
-                  </p>
-                </div>
-              )}
+      <div className="flex flex-col h-full">
+        <div className="p-4 border-b border-neutral-700">
+          <div className="flex items-center space-x-3">
+            <Avatar>
+              <AvatarImage src={session?.user?.image || ''} />
+              <AvatarFallback>
+                {session?.user?.name?.charAt(0) || 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">
+                {session?.user?.name || 'User'}
+              </p>
+              <p className="text-xs text-muted-foreground truncate">
+                {session?.user?.email}
+              </p>
             </div>
           </div>
+        </div>
 
-          {/* Sessions list */}
-          <div className="flex-1 overflow-hidden">
-            {sidebarContent}
+        <div className="flex-1 overflow-auto">
+          <div className="p-4">
+            <h3 className="text-sm font-medium mb-2">Sessions</h3>
+            <div>
+              {chatSessions.map((session) => (
+                <Link
+                  key={session.id}
+                  href={`/dashboard/${session.id}`}
+                  className="flex items-center justify-between p-2 hover:bg-neutral-700"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm truncate">
+                      {session.chats[0]?.prompt || 'New Session'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(session.date).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={(e) => handleDeleteSession(session.id, e)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </Link>
+              ))}
+            </div>
           </div>
+        </div>
 
-          {/* Collapse button */}
+        <div className="p-4 border-t border-neutral-700">
           <Button
             variant="ghost"
-            size="icon"
-            className="absolute bottom-4 right-4"
-            onClick={() => setCollapsed(!collapsed)}
+            className="w-full justify-start"
+            onClick={handleSignOut}
           >
-            {collapsed ? (
-              <ChevronRight className="h-4 w-4" />
-            ) : (
-              <ChevronLeft className="h-4 w-4" />
-            )}
+            <LogOut className="h-4 w-4 mr-2" />
+            Sign Out
           </Button>
         </div>
       </div>
-
-      {/* Mobile overlay */}
-      {mobileOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
-    </>
+    </div>
   );
 }

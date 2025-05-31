@@ -32,108 +32,67 @@ interface InputCardProps {
         height: number;
         fps: number;
         frameCount: number;
-    }, isFollowUp?: boolean) => Promise<{
-        videoUrl: string;
-        genRes: string;
-        prompt: string;
-    }>;
+    }) => Promise<any>;
 }
 
 export default function InputCard({ onSubmit }: InputCardProps) {
     const [prompt, setPrompt] = useState('');
+    const [width, setWidth] = useState(512);
+    const [height, setHeight] = useState(512);
+    const [fps, setFps] = useState(24);
+    const [frameCount, setFrameCount] = useState(24);
     const [loading, setLoading] = useState(false);
-    const [width, setWidth] = useState<number>(800);
-    const [height, setHeight] = useState<number>(600);
-    const [fps, setFps] = useState<number>(30);
-    const [frameCount, setFrameCount] = useState<number>(300);
-    const [currentVideoUrl, setCurrentVideoUrl] = useState<string | null>(null);
-    const [currentResponse, setCurrentResponse] = useState<string>('');
-
-    const [videoHistory, setVideoHistory] = useState<{
-        urls: { url: string; prompt: string; genRes: string }[];
-        currentIndex: number;
-      }>({
-        urls: [],
-        currentIndex: -1,
-      });
-
-    const [initPrompt, setInitPrompt] = useState(false);
-
     const [errors, setErrors] = useState<ErrorState>({
         prompt: '',
         width: '',
         height: '',
         frameCount: ''
       });
-      
 
     const validateInputs = () => {
-    const newErrors = {
-        prompt: '',
-        width: '',
-        height: '',
-        frameCount: ''
-    };
-    
-    if (!prompt.trim()) {
-        newErrors.prompt = 'Prompt cannot be empty';
-    }
-    
-    if (width < MIN_WIDTH || width > MAX_WIDTH) {
-        newErrors.width = `Width must be between ${MIN_WIDTH} and ${MAX_WIDTH}`;
-    }
-    
-    if (height < MIN_HEIGHT || height > MAX_HEIGHT) {
-        newErrors.height = `Height must be between ${MIN_HEIGHT} and ${MAX_HEIGHT}`;
-    }
-    
-    if (frameCount < MIN_FRAMES || frameCount > MAX_FRAMES) {
-        newErrors.frameCount = `Frame count must be between ${MIN_FRAMES} and ${MAX_FRAMES}`;
-    }
-    
-    setErrors(newErrors);
-    
-    return !Object.values(newErrors).some(error => error);
+        const newErrors: ErrorState = {
+            prompt: '',
+            width: '',
+            height: '',
+            frameCount: ''
+        };
+
+        if (!prompt.trim()) {
+            newErrors.prompt = 'Prompt is required';
+        }
+
+        if (width < MIN_WIDTH || width > MAX_WIDTH) {
+            newErrors.width = `Width must be between ${MIN_WIDTH} and ${MAX_WIDTH}`;
+        }
+
+        if (height < MIN_HEIGHT || height > MAX_HEIGHT) {
+            newErrors.height = `Height must be between ${MIN_HEIGHT} and ${MAX_HEIGHT}`;
+        }
+
+        if (frameCount < MIN_FRAMES || frameCount > MAX_FRAMES) {
+            newErrors.frameCount = `Frame count must be between ${MIN_FRAMES} and ${MAX_FRAMES}`;
+        }
+
+        setErrors(newErrors);
+        return !Object.values(newErrors).some(error => error !== '');
     };
 
-    const addToVideoHistory = (url: string, promptText: string, genResText: string) => {
-    // Remove any "future" history if we're not at the latest point
-    const newUrls = videoHistory.urls.slice(0, videoHistory.currentIndex + 1);
-    
-    // Add the new URL to history
-    newUrls.push({ url, prompt: promptText, genRes: genResText });
-    
-    // Update the history state
-    setVideoHistory({
-        urls: newUrls,
-        currentIndex: newUrls.length - 1
-    });
-    };   
-
-    const handleSubmit = async (isFollowUp = false) => {
+    const handleSubmit = async () => {
         if (!validateInputs()) {
-            Object.values(errors).forEach(error => {
-                if (error) toast.error(error);
-            });
             return;
         }
 
         setLoading(true);
         try {
-            const result = await onSubmit(prompt, {
+            await onSubmit(prompt, {
                 width,
                 height,
                 fps,
                 frameCount
-            }, isFollowUp);
-
-            // Reset form after successful submission
-            if (!isFollowUp) {
-                setPrompt('');
-            }
-        } catch (err) {
-            console.error(err);
-            toast.error('Failed to generate video');
+            });
+            setPrompt('');
+        } catch (error) {
+            console.error('Failed to submit prompt:', error);
         } finally {
             setLoading(false);
         }
@@ -266,25 +225,11 @@ export default function InputCard({ onSubmit }: InputCardProps) {
             </div>
             </div>
               
-            <div className="flex gap-2 justify-end">
+            <div className="flex justify-end">
             <Button 
-            onClick={() => handleSubmit(true)}
-            variant="outline"
+            onClick={handleSubmit}
             disabled={loading}
-            >
-            {loading ? (
-                <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
-                </>
-            ) : (
-                'Follow Up'
-            )}
-            </Button>
-
-            <Button 
-            onClick={() => handleSubmit(false)}
-            disabled={loading}
+            className="w-full"
             >
             {loading ? (
                 <>

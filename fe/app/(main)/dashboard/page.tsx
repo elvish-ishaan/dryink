@@ -13,6 +13,7 @@ const Page = () => {
   const [currentResponse, setCurrentResponse] = useState<string>('');
   const [currentPrompt, setCurrentPrompt] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const [isFollowUp, setIsFollowUp] = useState(false);
   const [videoHistory, setVideoHistory] = useState<{
     urls: { url: string; prompt: string; genRes: string }[];
     currentIndex: number;
@@ -32,55 +33,12 @@ const Page = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const callPromptAPI = async (prompt: string, params: {
-    width: number;
-    height: number;
-    fps: number;
-    frameCount: number;
-  }, isFollowUp: boolean = false) => {
-    const endpoint = isFollowUp
-      ? `${BACKEND_BASE_URL}/prompt/followUpPrompt`
-      : `${BACKEND_BASE_URL}/prompt`;
-
-    const body = isFollowUp
-      ? {
-          followUprompt: prompt,
-          previousGenRes: currentResponse,
-          ...params
-        }
-      : {
-          prompt,
-          ...params
-        };
-
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        "Authorization": `Bearer ${session?.user?.accessToken}`
-      },
-      body: JSON.stringify(body),
-    });
-
-    const data = await response.json();
-
-    if (!data.success) {
-      throw new Error(data.message || 'Generation failed');
-    }
-
-    return {
-      videoUrl: data.data.signedUrl,
-      genRes: data.data.genRes,
-      prompt: data.data.prompt || prompt
-    };
-  };
-
   const handlePromptSubmit = async (prompt: string, params: {
     width: number;
     height: number;
     fps: number;
     frameCount: number;
-  }, isFollowUp: boolean = false) => {
+  }) => {
     setLoading(true);
     try {
       const endpoint = isFollowUp
@@ -119,12 +77,11 @@ const Page = () => {
         prompt: data.data.prompt || prompt
       };
 
-      // Update current state
       setCurrentVideoUrl(result.videoUrl);
       setCurrentResponse(result.genRes);
       setCurrentPrompt(result.prompt);
+      setIsFollowUp(true);
 
-      // Add to history
       const newUrls = videoHistory.urls.slice(0, videoHistory.currentIndex + 1);
       newUrls.push({
         url: result.videoUrl,
@@ -188,25 +145,28 @@ const Page = () => {
   const canRedo = videoHistory.currentIndex < videoHistory.urls.length - 1;
 
   return (
-    <div className="flex flex-row h-screen bg-neutral-950 text-white">
-      <Sidebar/>
-      
-      {/* Main Content - adjusted to account for navbar */}
-      <div className="flex-1 px-4 py-3 grid gap-3 md:grid-cols-2 grid-cols-1 overflow-hidden bg-neutral-900">
-        {/* Left Section */}
-        <PromptCard onSubmit={handlePromptSubmit} />
+    <div className="flex h-screen bg-neutral-950 text-white">
+      <div className="w-64 flex-shrink-0 border-r border-neutral-800">
+        <Sidebar />
+      </div>
 
-        {/* Right Section */}
-        <VideoGenerationCard
-          currentVideoUrl={currentVideoUrl}
-          currentResponse={currentResponse}
-          prompt={currentPrompt}
-          onUndo={handleUndo}
-          onRedo={handleRedo}
-          canUndo={canUndo}
-          canRedo={canRedo}
-          loading={loading}
-        />
+      <div className="flex-1 flex bg-neutral-900">
+        <div className="w-3/5 border-r border-neutral-800">
+          <PromptCard onSubmit={handlePromptSubmit} />
+        </div>
+
+        <div className="w-2/5">
+          <VideoGenerationCard
+            currentVideoUrl={currentVideoUrl}
+            currentResponse={currentResponse}
+            prompt={currentPrompt}
+            onUndo={handleUndo}
+            onRedo={handleRedo}
+            canUndo={canUndo}
+            canRedo={canRedo}
+            loading={loading}
+          />
+        </div>
       </div>
     </div>
   );
