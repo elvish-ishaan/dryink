@@ -5,12 +5,13 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import axios from "axios";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import githubLogo from '@/public/github.svg'
 import logo from '@/assets/logo.svg'
+import googleLogo from '@/assets/google.png'
 
 
 export default function AuthPage({ type = "login" }) {
@@ -21,6 +22,9 @@ export default function AuthPage({ type = "login" }) {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter()
+
+  const { data: session, status } = useSession();
+  console.log(session,'session', status)
 
   const BACKEND_URL = 'http://localhost:5000/api/v1'
 
@@ -33,9 +37,21 @@ export default function AuthPage({ type = "login" }) {
     setLoading(true);
     setError(null);
     try {
-      await signIn("github");
+      await signIn("github", { callbackUrl: '/dashboard', redirect: false});
     } catch (err) {
       setError("Failed to sign in with GitHub.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+       await signIn("google", { callbackUrl: '/dashboard', redirect: false});
+    } catch (err) {
+      setError("Failed to sign in with Google.");
     } finally {
       setLoading(false);
     }
@@ -68,6 +84,7 @@ export default function AuthPage({ type = "login" }) {
           name,
           email,
           password,
+          authProvider: 'credentials'
         });
         setLoading(false)
         if(res.data.success){ 
@@ -155,8 +172,9 @@ export default function AuthPage({ type = "login" }) {
               </span>
             </div>
           </div>
-
-          {/* GitHub Auth */}
+          
+          <div className=" flex gap-2 flex-col-reverse" >
+              {/* GitHub Auth */}
           <Button
             onClick={handleGithubLogin}
             variant="outline"
@@ -172,6 +190,23 @@ export default function AuthPage({ type = "login" }) {
             />
             {loading ? "Loading..." : "Github"}
           </Button>
+            {/* Google Auth */}
+            <Button
+              onClick={handleGoogleLogin}
+              variant="outline"
+              className="w-full flex items-center justify-center cursor-pointer"
+              disabled={loading}
+            >
+              <Image
+                src={googleLogo}
+                alt="Google"
+                width={20}
+                height={20}
+                className="mr-2 dark:text-white dark:bg-white rounded-full"
+              />
+              {loading ? "Loading..." : "Google"}
+            </Button>
+          </div>
 
           {/* Terms */}
           <p className="text-xs text-center text-muted-foreground">

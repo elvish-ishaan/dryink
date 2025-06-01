@@ -1,14 +1,16 @@
 import { NextAuthOptions, Session, User } from 'next-auth';
-// import GoogleProvider from 'next-auth/providers/google';
+import GoogleProvider from 'next-auth/providers/google';
 import GithubProvider from "next-auth/providers/github"
 import CredentialsProvider from 'next-auth/providers/credentials';
 import axios from 'axios';
 import jwt from 'jsonwebtoken'
 
-
-// if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SEC || !process.env.NEXTAUTH_SECRET) {
-//     throw new Error('Missing required environment variables.');
-// }
+//check for required env variables
+if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SEC || !process.env.NEXTAUTH_SECRET
+    || !process.env.GITHUB_ID || !process.env.GITHUB_SECRET
+) {
+    throw new Error('Missing required environment variables.');
+}
 
 const BACKEND_URL = 'http://localhost:5000/api/v1'
 const JWT_SECRET = process.env.NEXTAUTH_SECRET!;
@@ -16,10 +18,10 @@ const JWT_SECRET = process.env.NEXTAUTH_SECRET!;
 export const authOptions: NextAuthOptions = {
     secret: process.env.NEXTAUTH_SECRET,
     providers: [
-        // GoogleProvider({
-        //     clientId: process.env.GOOGLE_CLIENT_ID,
-        //     clientSecret: process.env.GOOGLE_CLIENT_SEC,
-        // }),
+        GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID as string,
+            clientSecret: process.env.GOOGLE_CLIENT_SEC as string,
+        }),
         GithubProvider({
       clientId: process.env.GITHUB_ID as string,
       clientSecret: process.env.GITHUB_SECRET as string,
@@ -93,11 +95,20 @@ export const authOptions: NextAuthOptions = {
           return token;
         },
 
-        async signIn({ user }): Promise<boolean> {
+        async signIn({ user, account }): Promise<boolean> {
             if (user?.email) {
                 try {
-                    console.log(user,'this is user')
-                    //check if user not exists then create new user
+                     //registered user if first time login
+                    const res = await axios.post(`${BACKEND_URL}/auth/signup`, {
+                        name: user.name,
+                        email: user.email,
+                        authProvider: account?.provider
+                    });
+                    console.log(res,'getting res from signup..........')
+                    
+                    if (!res.data?.success) {
+                        throw new Error(res.data?.message);
+                    }
                     return true;
                 } catch (error) {
                     console.error('Error in signIn callback:', error);
@@ -107,7 +118,6 @@ export const authOptions: NextAuthOptions = {
             return true;
         },
         async session({ session, token }): Promise<Session> {
-            console.log(session,'sessinon.......', 'token:',token)
             if (session?.user && token.email) {
                // Expose custom token to frontend
                session.user.id = token.id;

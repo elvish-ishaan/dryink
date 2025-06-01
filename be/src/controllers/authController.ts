@@ -67,9 +67,10 @@ enum AuthProvider {
 
 export const handleSignUp = async (req: Request, res: Response) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, authProvider } = req.body;
 
-    if (!name || !email || !password) {
+    if (!name || !email || !authProvider) {
+      console.log('missing params............')
       res.status(400).json({
         success: false,
         message: 'All parameters are required',
@@ -77,15 +78,75 @@ export const handleSignUp = async (req: Request, res: Response) => {
       return
     }
 
-   //hash password before saving to db
-    const user = await prisma.user.create({
-      data: {
-        name,
+    //check if user already exists
+    const existingUser = await prisma.user.findFirst({
+      where: {
         email,
-        password: await bcrypt.hash(password, 10),
-        authProvider: AuthProvider.CREDENTIALS
       },
     });
+    //return positive response for auth provier= google or github
+    if(existingUser && authProvider === 'google' || authProvider === 'github'){
+      console.log('sending res for oauth')
+      res.status(200).json({
+        success: true,
+        message: 'User already exists',
+      });
+      return
+    }
+    //reutrn this for credentials auth provider
+    if(existingUser){
+      console.log('sending res for credentials')
+      res.status(400).json({
+        success: false,
+        message: 'User already exists',
+      });
+      return
+    }
+
+    console.log('creating new usre............')
+    //if user doesnt exist, create new one 
+   let user;
+   if(authProvider === 'google'){
+       user = await prisma.user.create({
+        data: {
+          name,
+          email,
+          authProvider: AuthProvider.GOOGLE
+        },
+      });
+   }
+    
+    //if github
+    if(authProvider === 'github'){
+      user = await prisma.user.create({
+        data: {
+          name,
+          email,
+          authProvider: AuthProvider.GITHUB
+        },
+      });
+    }
+    //if credentials
+    // in this case password is must and should be hashed before saving
+    if(authProvider === 'credentials'){
+      user = await prisma.user.create({
+        data: {
+          name,
+          email,
+          password: await bcrypt.hash(password, 10),
+          authProvider: AuthProvider.CREDENTIALS
+        },
+      });
+    }
+
+    //check if user created
+    if(!user){
+      res.status(400).json({
+        success: false,
+        message: 'Unable to create user',
+      });
+      return
+    }
 
     //make password null
     user.password = null;
