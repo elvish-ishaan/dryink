@@ -9,6 +9,8 @@ import { signIn } from "next-auth/react";
 import axios from "axios";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import githubLogo from '@/public/github.svg'
+import logo from '@/assets/logo.svg'
 
 
 export default function AuthPage({ type = "login" }) {
@@ -85,7 +87,7 @@ export default function AuthPage({ type = "login" }) {
         <div className="w-full max-w-md space-y-6 z-10">
           {/* Logo */}
           <div className="flex items-center space-x-2">
-            <Image src="/logo.png" alt="Dryink Logo" width={30} height={30} />
+            <Image src={logo} alt="Dryink Logo" width={30} height={30} />
             <span className="text-xl font-bold">Dryink</span>
           </div>
 
@@ -162,7 +164,7 @@ export default function AuthPage({ type = "login" }) {
             disabled={loading}
           >
             <Image
-              src="/github.png"
+              src={githubLogo}
               alt="GitHub"
               width={20}
               height={20}

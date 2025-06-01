@@ -6,6 +6,7 @@ import { Sun, Moon } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import logo from '@/assets/logo.svg'
 
 const Navbar = () => {
   const navItems = [
@@ -51,7 +52,7 @@ const Navbar = () => {
           {/* Logo */}
           <div className="flex items-center gap-2">
             <Image
-              src="/logo.png"
+              src={logo}
               alt="logo"
               width={40}
               height={40}

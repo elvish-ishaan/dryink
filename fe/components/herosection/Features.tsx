@@ -2,41 +2,41 @@
 
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
-import { Search, Database, Settings, Users } from "lucide-react";
-import Image from "next/image";
+// import Image from "next/image";
+import { Brain, Download, Edit3, Type} from 'lucide-react';
 
 const sections = [
   {
-    title: "Collaborative Console",
-    text: `Get AI powered recommendations to optimize query performance.`,
-    subText: "Built to serve your whole team working together.",
+    title: "1. Enter Your Prompt",
+    text: "Start by describing the video you envision. Be as detailed as possible to guide the AI.",
+    subText: "Tell the AI your story idea, characters, setting, and desired mood.",
     image:
       "https://www.shutterstock.com/image-photo/digital-brain-circuit-ai-cocept-600nw-2498421665.jpg",
-    icon: <Search size={18} />,
+    icon: <Type size={24} />, // Changed to Type for text input
   },
   {
-    title: "Instant Postgres Setup",
-    text: `Spin up a production-ready Postgres DB in seconds.`,
-    subText: "Blazing fast from the first request.",
+    title: "2. AI Generates Your Video",
+    text: "Our intelligent AI takes your prompt and transforms it into a unique video.",
+    subText: "Sit back and watch as the AI brings your vision to life, frame by frame.",
     image:
       "https://img.freepik.com/free-vector/ai-technology-microchip-background-vector-digital-transformation-concept_53876-112222.jpg",
-    icon: <Database size={18} />,
+    icon: <Brain size={24} />, // Changed to Brain to represent AI/generation
   },
   {
-    title: "Edge Caching",
-    text: `Serve data from the edge with zero effort.`,
-    subText: "One line of config. Real speed.",
+    title: "3. Download Your Creation",
+    text: "Once complete, your video is ready for download in high quality.",
+    subText: "Get your masterpiece in a format that's perfect for sharing.",
     image:
-      "https://ichef.bbci.co.uk/ace/standard/1024/cpsprodpb/14202/production/_108243428_gettyimages-871148930.jpg",
-    icon: <Settings size={18} />,
+      "https://ichef.bbci.co.uk/ace/standard/1024/cpsprodpb/14202/production/_108243444_gettyimages-871148930.jpg",
+    icon: <Download size={24} />, // Changed to Download for downloading
   },
   {
-    title: "Built for Teams",
-    text: `Organize work, manage access, and collaborate in real time.`,
-    subText: "Empower your engineers and analysts.",
+    title: "4. Refine with Follow-up Prompts",
+    text: "Need tweaks? Provide additional prompts to fine-tune your video.",
+    subText: "Iterate and perfect your creation until it's exactly what you imagined.",
     image:
       "https://community.nasscom.in/sites/default/files/styles/960_x_600/public/media/images/artificial-intelligence-7768524_1920-edited.jpg?itok=ztrPTpOP",
-    icon: <Users size={18} />,
+    icon: <Edit3 size={24} />, // Changed to Edit3 for refining/editing
   },
 ];
 
@@ -52,12 +52,10 @@ export default function Featured() {
     <section className="bg-white w-full text-neutral-900 dark:bg-neutral-900 dark:text-white py-10 px-6 md:px-32">
       <div className="flex flex-col justify-center items-center text-center max-w-3xl mx-auto mb-16">
         <h2 className="text-3xl md:text-4xl font-bold text-[#4a3294]">
-          We built something truly unique
+         Bring Learning to Life with Dryink
         </h2>
         <p className="mt-4 text-lg max-w-2xl mx-auto text-gray-600 dark:text-gray-300">
-          With our modern serverless architecture, and tight integration with
-          Prisma ORM, we created a Postgres variant that feels like magic and
-          scales as fast as your ideas.
+          Turn complex concepts into dynamic, engaging animations in seconds. Dryink empowers educators, creators, and students to bring lessons to life through visually compelling, AI-generated videos — no design or animation skills required.
         </p>
       </div>
 

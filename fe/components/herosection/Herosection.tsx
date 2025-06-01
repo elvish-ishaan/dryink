@@ -3,6 +3,7 @@ import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useAnimate, stagger } from "framer-motion";
+import NotBacked from "./NotBacked";
 
 const HeroSection = () => {
   const [scope, animate] = useAnimate();
@@ -42,7 +43,7 @@ const HeroSection = () => {
   return (
     <section
       ref={scope}
-      className="w-full min-h-screen flex items-center justify-center bg-white dark:bg-neutral-900 text-black dark:text-white px-6 py-16 relative overflow-hidden"
+      className="w-full mt-15 min-h-screen flex items-center justify-center bg-white dark:bg-neutral-900 text-black dark:text-white px-6 py-16 relative overflow-hidden"
       aria-label="Hero section introducing Richat AI assistant"
     >
       {/* Purple Background Glow */}
@@ -72,15 +73,16 @@ const HeroSection = () => {
         </p>
 
         {/* Animated Button */}
-        <div className="space-x-4 flex justify-center flex-wrap gap-4">
+        <div className="space-x-4 flex flex-col items-center justify-center flex-wrap gap-4">
           <Button
             onClick={() => router.push("/dashboard")}
-            className="animate-button mt-5 cursor-pointer bg-gradient-to-r from-violet-500 to-purple-500 hover:bg-purple-700 text-white px-12 py-6 rounded-full text-sm font-semibold focus:outline-none focus-visible:ring-4 focus-visible:ring-purple-400"
-            aria-label="Get a demo of Richat AI"
+            className="animate-button mt-5 w-fit cursor-pointer bg-gradient-to-r from-violet-500 to-purple-500 hover:bg-purple-700 text-white px-12 py-6 rounded-full text-sm font-semibold focus:outline-none focus-visible:ring-4 focus-visible:ring-purple-400"
+            aria-label="Get started with Dryink"
             style={{ opacity: 0, filter: "blur(4px)", transform: "translateY(20px) scale(0.8)" }}
           >
             Get started
           </Button>
+          <NotBacked/>
         </div>
       </div>
     </section>
