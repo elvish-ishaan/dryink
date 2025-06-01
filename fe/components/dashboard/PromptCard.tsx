@@ -9,7 +9,7 @@ import { useState } from "react";
 
 interface PromptCardProps {
   onSubmit: (prompt: string, params: {
-    width: number;
+    width: number; 
     height: number;
     fps: number;
     frameCount: number;

@@ -3,42 +3,41 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
 // import Image from "next/image";
-import { Brain, Download, Edit3, Type} from 'lucide-react';
+import { Brain, Download, Edit3, Type, Video} from 'lucide-react';
+
+
 
 const sections = [
   {
     title: "1. Enter Your Prompt",
     text: "Start by describing the video you envision. Be as detailed as possible to guide the AI.",
     subText: "Tell the AI your story idea, characters, setting, and desired mood.",
-    image:
-      "https://www.shutterstock.com/image-photo/digital-brain-circuit-ai-cocept-600nw-2498421665.jpg",
-    icon: <Type size={24} />, // Changed to Type for text input
+    video: "/Typing.mp4", 
+    icon: <Type size={24} />,
   },
   {
     title: "2. AI Generates Your Video",
     text: "Our intelligent AI takes your prompt and transforms it into a unique video.",
     subText: "Sit back and watch as the AI brings your vision to life, frame by frame.",
-    image:
-      "https://img.freepik.com/free-vector/ai-technology-microchip-background-vector-digital-transformation-concept_53876-112222.jpg",
-    icon: <Brain size={24} />, // Changed to Brain to represent AI/generation
+    video: "Video.mp4", 
+    icon: <Brain size={24} />,
   },
   {
     title: "3. Download Your Creation",
     text: "Once complete, your video is ready for download in high quality.",
     subText: "Get your masterpiece in a format that's perfect for sharing.",
-    image:
-      "https://ichef.bbci.co.uk/ace/standard/1024/cpsprodpb/14202/production/_108243444_gettyimages-871148930.jpg",
-    icon: <Download size={24} />, // Changed to Download for downloading
+    video: "download.mp4", 
+    icon: <Download size={24} />,
   },
   {
     title: "4. Refine with Follow-up Prompts",
     text: "Need tweaks? Provide additional prompts to fine-tune your video.",
     subText: "Iterate and perfect your creation until it's exactly what you imagined.",
-    image:
-      "https://community.nasscom.in/sites/default/files/styles/960_x_600/public/media/images/artificial-intelligence-7768524_1920-edited.jpg?itok=ztrPTpOP",
-    icon: <Edit3 size={24} />, // Changed to Edit3 for refining/editing
+    video: "man.mp4",
+    icon: <Edit3 size={24} />,
   },
 ];
+
 
 export default function Featured() {
   const containerRef = useRef(null);
@@ -107,32 +106,38 @@ export default function Featured() {
                       </motion.div>
                     </div>
 
-                    {/* Image */}
+                    {/* Video */}
                     <motion.div
                       initial={{ opacity: 0, x: 50 }}
                       whileInView={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.6 }}
                       className="flex justify-center"
                     >
-                      <img
-                        src={section.image}
-                        alt={section.title}
+                      <video
+                        src={section.video}
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
                         className="w-[250px] h-[250px] object-cover rounded-xl shadow-xl"
                       />
                     </motion.div>
                   </>
                 ) : (
                   <>
-                    {/* Image */}
+                    {/* Video */}
                     <motion.div
                       initial={{ opacity: 0, x: -50 }}
                       whileInView={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.6 }}
                       className="flex justify-center"
                     >
-                      <img
-                        src={section.image}
-                        alt={section.title}
+                      <video
+                        src={section.video}
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
                         className="w-[250px] h-[250px] object-cover rounded-xl shadow-xl"
                       />
                     </motion.div>
@@ -172,6 +177,7 @@ export default function Featured() {
             );
           })}
         </div>
+
       </div>
     </section>
   );
