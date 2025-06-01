@@ -56,24 +56,19 @@ const HeroSection = () => {
           className="animate text-sm tracking-widest text-purple-700 dark:text-white uppercase mb-4"
           style={{ opacity: 0, filter: "blur(4px)", transform: "translateY(20px)" }}
         >
-          RICHAT AI ASSISTANT PLATFORM
+          Empower education through AI-driven animation.
         </p>
         <h1
           className="animate text-4xl md:text-5xl font-extrabold leading-tight mb-6 text-neutral-700 dark:text-white"
           style={{ opacity: 0, filter: "blur(4px)", transform: "translateY(20px)" }}
         >
-          Personal AI assistant
-          <br />
-          for business automation
-          <br />
-          and growth
+          Where Ideas Turn into Animated Lessons 
         </h1>
         <p
           className="animate max-w-xl mx-auto mb-8 mt-12 text-violet-600 dark:text-violet-400"
           style={{ opacity: 0, filter: "blur(4px)", transform: "translateY(20px)" }}
         >
-          RiChat is an innovative AI-powered assistant that helps businesses
-          automate processes, improve customer service, and drive conversions.
+          Easily turn lessons into engaging, animated videos. Dryink helps you simplify complex ideas through dynamic visuals — no animation skills needed.
         </p>
 
         {/* Animated Button */}
@@ -84,7 +79,7 @@ const HeroSection = () => {
             aria-label="Get a demo of Richat AI"
             style={{ opacity: 0, filter: "blur(4px)", transform: "translateY(20px) scale(0.8)" }}
           >
-            Get a demo
+            Get started
           </Button>
         </div>
       </div>

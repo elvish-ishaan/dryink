@@ -81,21 +81,6 @@ export default function Sidebar() {
 
   return (
     <aside className="h-full bg-neutral-800 border-r border-neutral-800 flex flex-col text-foreground">
-      {/* User Info */}
-      <div className="p-4 border-b border-neutral-800">
-        <div className="flex items-center space-x-3">
-          <Avatar>
-            <AvatarImage src={session?.user?.image || ""} />
-            <AvatarFallback>
-              {session?.user?.name?.charAt(0) || "U"}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">{session?.user?.name || "User"}</p>
-            <p className="text-xs text-muted-foreground truncate">{session?.user?.email}</p>
-          </div>
-        </div>
-      </div>
 
       {/* Sessions */}
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
@@ -134,6 +119,22 @@ export default function Sidebar() {
         ) : (
           <p className="text-sm text-muted-foreground">No sessions found.</p>
         )}
+      </div>
+
+      {/* User Info */}
+      <div className="p-4 border-b border-neutral-800">
+        <div className="flex items-center space-x-3">
+          <Avatar>
+            <AvatarImage src={session?.user?.image || ""} />
+            <AvatarFallback>
+              {session?.user?.name?.charAt(0) || "U"}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium truncate">{session?.user?.name || "User"}</p>
+            <p className="text-xs text-muted-foreground truncate">{session?.user?.email}</p>
+          </div>
+        </div>
       </div>
 
       {/* Sign Out */}

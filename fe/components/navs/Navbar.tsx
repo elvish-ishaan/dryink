@@ -5,6 +5,7 @@ import { Button } from "../ui/button";
 import { Sun, Moon } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const Navbar = () => {
   const navItems = [
@@ -13,6 +14,7 @@ const Navbar = () => {
     { name: "Contacts", href: "/contacts" },
   ];
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const router = useRouter();
   // Set initial mode on mount
   useEffect(() => {
     const prefersDark = window.matchMedia(
@@ -94,12 +96,14 @@ const Navbar = () => {
           {/* Auth Buttons */}
           <motion.div layoutId="signin" className="flex gap-2">
             <Button
+            onClick={ () => router.push("/login") }
               variant="outline"
               className="rounded-2xl text-neutral-800 dark:text-white cursor-pointer"
             >
               Login
             </Button>
             <Button
+              onClick={ () => router.push("/signup") }
               variant="outline"
               className="rounded-2xl text-neutral-800 dark:text-white cursor-pointer"
             >

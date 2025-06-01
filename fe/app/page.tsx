@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import Featured from "@/components/herosection/Features";
 import HeroSection from "@/components/herosection/Herosection";
 

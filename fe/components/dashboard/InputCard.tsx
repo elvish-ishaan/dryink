@@ -34,8 +34,8 @@ interface InputCardProps {
 
 export default function InputCard({ onSubmit }: InputCardProps) {
     const [prompt, setPrompt] = useState('');
-    const [width, setWidth] = useState(512);
-    const [height, setHeight] = useState(512);
+    const [width, setWidth] = useState(1920);
+    const [height, setHeight] = useState(1080);
     const [fps, setFps] = useState(24);
     const [frameCount, setFrameCount] = useState(200);
     const [loading, setLoading] = useState(false);

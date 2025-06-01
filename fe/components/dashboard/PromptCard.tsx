@@ -81,18 +81,12 @@ export default function PromptCard({ onSubmit }: PromptCardProps) {
                                 )}
                             >
                                 <div className="flex justify-between items-center">
-                                    <p className="text-muted-foreground max-w-[80%] truncate">{item.prompt}</p>
-                                    <Badge
-                                        variant={
-                                            item.status === 'completed'
-                                                ? 'default'
-                                                : item.status === 'pending'
-                                                ? 'outline'
-                                                : 'destructive'
-                                        }
-                                    >
-                                        {item.status === 'pending' ? 'Generating' : item.status.toUpperCase()}
-                                    </Badge>
+                                  <p className="text-muted-foreground flex-grow break-words pr-4">
+                                    {item.prompt}
+                                  </p>
+                                  <Badge variant={ item.status === 'completed' ? 'default' : item.status === 'pending' ? 'outline' : 'destructive' } >
+                                    {item.status === 'pending' ? 'Generating' : item.status.toUpperCase()}
+                                  </Badge>
                                 </div>
                             </div>
                         ))
