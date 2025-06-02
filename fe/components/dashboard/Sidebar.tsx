@@ -80,7 +80,7 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="h-full bg-neutral-800 border-r border-neutral-800 flex flex-col text-foreground">
+    <aside className="h-full bg-neutral-800 border-r border-neutral-800 flex flex-col text-foreground md:min-w-64">
 
       {/* Sessions */}
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
@@ -140,11 +140,10 @@ export default function Sidebar() {
       {/* Sign Out */}
       <div className="p-4 border-t border-neutral-800 ">
         <Button
-          variant="ghost"
-          className="w-full justify-start bg-gray-800"
+          className="w-full justify-start text-neutral-200 border border-neutral-500 bg-neutral-800 hover:bg-neutral-800"
           onClick={handleSignOut}
         >
-          <LogOut className="h-4 w-4 mr-2" />
+          <LogOut className="h-4 w-4 mr-2" /> 
           Sign Out
         </Button>
       </div>
