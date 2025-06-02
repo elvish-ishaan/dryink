@@ -42,7 +42,7 @@ export default function VideoGenerationCard({
                 {loading ? (
                     <div className=" flex flex-col gap-10 items-center">
                         <Loader/>
-                        <span className=" text-muted-foreground font-semibold">Hold on!, Your video is being generated...</span>
+                        <span className="text-neutral-300 font-semibold">Hold on!, Your video is being generated...</span>
                     </div>
                     // <Skeleton className="w-full max-w-3xl aspect-video" />
                 ) : currentVideoUrl ? (
@@ -97,8 +97,8 @@ export default function VideoGenerationCard({
                     </>
                 ) : (
                     <div className="flex flex-col items-center justify-center text-center h-full">
-                        <p className="text-muted-foreground text-sm">Generated video will appear here</p>
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="text-neutral-200 text-sm">Generated video will appear here</p>
+                        <p className="text-xs text-neutral-300 mt-1">
                             Enter a prompt and adjust parameters to generate a video
                         </p>
                     </div>

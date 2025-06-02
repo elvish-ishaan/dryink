@@ -65,10 +65,10 @@ export default function PromptCard({ onSubmit }: PromptCardProps) {
                 <CardTitle>Prompt History</CardTitle>
             </CardHeader>
 
-            <CardContent className="flex-1 flex flex-col h-full p-2">
-                <ScrollArea className="flex-1 border p-2 min-h-0">
+            <CardContent className="flex-1 flex flex-col h-full p-2 ">
+                <ScrollArea className="flex-1 border p-3 min-h-0 rounded-lg">
                     {promptHistory.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">No prompts yet.</p>
+                        <p className="text-sm text-neutral-300">No prompts yet.</p>
                     ) : (
                         promptHistory.map((item) => (
                             <div

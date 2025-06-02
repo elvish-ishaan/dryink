@@ -232,7 +232,7 @@ export default function AuthPage({ type = "login" }) {
               {[1, 2, 3, 4, 5, 6].map((_, i) => (
                 <Image
                   key={i}
-                  src="/people.png"
+                  src={`avatar${i}.svg`}
                   alt="user"
                   width={40}
                   height={40}
