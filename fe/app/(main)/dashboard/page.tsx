@@ -9,6 +9,7 @@ import { BACKEND_BASE_URL } from '@/lib/constants';
 
 const Page = () => {
   const { data: session } = useSession();
+  console.log(session,'getting user.......')
   const [currentVideoUrl, setCurrentVideoUrl] = useState<string | null>(null);
   const [currentResponse, setCurrentResponse] = useState<string>('');
   const [currentPrompt, setCurrentPrompt] = useState<string>('');

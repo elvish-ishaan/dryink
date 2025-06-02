@@ -29,6 +29,15 @@ export const handleLogin = async (req: Request, res: Response) => {
       return
     }
 
+    //check weather user already registered via google or github
+    if(user.authProvider === 'google' || user.authProvider === 'github'){
+      res.status(400).json({
+        success: false,
+        message: 'User already registered',
+      });
+      return
+    }
+
     const isPasswordCorrect = await bcrypt.compare(password, user?.password as string);
 
     if (!isPasswordCorrect) {
@@ -66,8 +75,9 @@ enum AuthProvider {
 }
 
 export const handleSignUp = async (req: Request, res: Response) => {
+  console.log(req.body,'getting req body..........')
   try {
-    const { name, email, password, authProvider } = req.body;
+    const { name, email, password, authProvider, id: providerGeneratedId } = req.body;
 
     if (!name || !email || !authProvider) {
       console.log('missing params............')
@@ -86,7 +96,6 @@ export const handleSignUp = async (req: Request, res: Response) => {
     });
     //return positive response for auth provier= google or github
     if(existingUser && authProvider === 'google' || authProvider === 'github'){
-      console.log('sending res for oauth')
       res.status(200).json({
         success: true,
         message: 'User already exists',
@@ -95,7 +104,6 @@ export const handleSignUp = async (req: Request, res: Response) => {
     }
     //reutrn this for credentials auth provider
     if(existingUser){
-      console.log('sending res for credentials')
       res.status(400).json({
         success: false,
         message: 'User already exists',
@@ -109,6 +117,7 @@ export const handleSignUp = async (req: Request, res: Response) => {
    if(authProvider === 'google'){
        user = await prisma.user.create({
         data: {
+          id: providerGeneratedId,
           name,
           email,
           authProvider: AuthProvider.GOOGLE
@@ -120,6 +129,7 @@ export const handleSignUp = async (req: Request, res: Response) => {
     if(authProvider === 'github'){
       user = await prisma.user.create({
         data: {
+          id:providerGeneratedId,
           name,
           email,
           authProvider: AuthProvider.GITHUB

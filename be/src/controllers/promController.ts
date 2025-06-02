@@ -43,6 +43,7 @@ const waitForJobCompletion = (jobId: string): Promise<JobData> => {
 
 // --- Main Prompt Handler ---
 export const handlePrompt = async (req: Request, res: Response) => {
+  console.log(req.user,'getting user from req')
   try {
     const { prompt, height, width, fps, frameCount } = req.body;
 
@@ -98,7 +99,7 @@ export const handlePrompt = async (req: Request, res: Response) => {
         //first find the user
      const user = await prisma.user.findUnique({
         where: {
-          id: req.user.id,
+          email: req.user?.email,
         },
         include:{
           chatSessions: {
@@ -109,11 +110,18 @@ export const handlePrompt = async (req: Request, res: Response) => {
         }
       });
       console.log('init user', user)
+      if(!user){
+        res.status(401).json({
+          success: false,
+          message: 'User not found',
+        });
+        return
+      }
 
       //create a new chat session
       const chatSession = await prisma.chatSession.create({
         data: {
-          userId: req.user.id,
+          userId: user?.id,
         },
       });
       console.log('created chat session', chatSession)
