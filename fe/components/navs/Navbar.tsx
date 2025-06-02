@@ -51,11 +51,11 @@ export default function Navbar() {
           <Image
             src={logo}
             alt="logo"
-            width={40}
-            height={40}
+            width={30}
+            height={30}
             className="rounded-full dark:text-white"
           />
-          <h1 className="text-lg font-bold text-neutral-900 dark:text-white">Dryink</h1>
+          <Link href="/" className="text-lg font-bold text-neutral-900 dark:text-white">Dryink</Link>
         </div>
 
         {/* Desktop Nav */}
@@ -63,13 +63,14 @@ export default function Navbar() {
           <motion.ul layoutId="navItems" className="flex gap-6">
             {navItems.map((item, idx) => (
               <li key={item.name}>
-                <Link
+                <Button
+                  variant={"link"}
                   key={idx}
-                  href={item.href}
+                  onClick={() => router.push(item.href)}
                   className="px-3 py-2 text-md w-full relative font-medium text-neutral-600 dark:text-neutral-300 rounded-2xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                 >
                   {item.name}
-                </Link>
+                </Button>
               </li>
             ))}
           </motion.ul>
