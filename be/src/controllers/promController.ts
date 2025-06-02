@@ -4,7 +4,6 @@ import { modifySketchSystemPrompt, newSystemPrompt, systemPrompt, userPromptEnha
 import { redisPublisher } from "../configs/redisConfig";
 import { v4 as uuidv4 } from 'uuid';
 import { getS3SignedUrl } from "../lib/utils";
-import OpenAI from "openai";
 import { prisma } from "../client/prismaClient";
 
 enum JobStatus {

@@ -244,11 +244,11 @@ export default function AuthPage({ type = "login" }) {
 
           {/* Message */}
           <h3 className="text-lg font-semibold">
-            Every AI is used by thousands of users
+            Dryink is used by thousands of users
           </h3>
           <p className="text-sm text-muted-foreground mt-2">
-            With lots of AI applications around, Everything AI stands out with
-            its state of the art capabilities.
+            {/* write a short description of Dryink here */}
+            Forget creating videos for your students. Dryink is a powerful tool that simplifies complex ideas into engaging, animated videos.
           </p>
         </div>
       </div>
