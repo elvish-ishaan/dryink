@@ -47,7 +47,7 @@ export default function AnimatedPromptInput({ prompt, setPrompt, errors, setErro
       
         {/* Animated Placeholder Overlay */}
         {prompt === "" && (
-          <div className="pointer-events-none absolute mx-auto left-3 flex justify-center items-center top-3 text-muted-foreground text-md">
+          <div className="pointer-events-none absolute mx-auto left-3 flex justify-center items-center top-3 text-neutral-200 text-md">
             <AnimatePresence mode="wait">
               {visible && (
                 <motion.div

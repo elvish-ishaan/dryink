@@ -80,11 +80,11 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="h-full bg-neutral-800 border-r border-neutral-800 flex flex-col text-foreground md:min-w-64">
+    <aside className="h-full bg-neutral-800 border-r border-neutral-800 flex flex-col md:min-w-64">
 
       {/* Sessions */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-2">
-        <h3 className="text-sm font-semibold text-muted-foreground">Sessions</h3>
+      <div className="flex-1  overflow-y-auto p-4 space-y-2">
+        <h3 className="text-sm font-semibold text-neutral-300">Sessions</h3>
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="scale-75">
@@ -102,7 +102,7 @@ export default function Sidebar() {
                 <p className="text-sm truncate">
                   {session.chats[0]?.prompt || "New Session"}
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-neutral-400">
                   {new Date(session.date).toLocaleDateString()}
                 </p>
               </div>
@@ -117,12 +117,12 @@ export default function Sidebar() {
             </Link>
           ))
         ) : (
-          <p className="text-sm text-muted-foreground">No sessions found.</p>
+          <p className="text-sm text-neutral-400">No sessions found.</p>
         )}
       </div>
 
       {/* User Info */}
-      <div className="p-4 border-b border-neutral-800">
+      <div className="p-1 px-2 border-b border-neutral-800">
         <div className="flex items-center space-x-3">
           <Avatar>
             <AvatarImage src={session?.user?.image || ""} />
@@ -138,9 +138,9 @@ export default function Sidebar() {
       </div>
 
       {/* Sign Out */}
-      <div className="p-4 border-t border-neutral-800 ">
+      <div className="p-2 border-t border-neutral-800 ">
         <Button
-          className="w-full justify-start text-neutral-200 border border-neutral-500 bg-neutral-800 hover:bg-neutral-800"
+          className="w-full justify-start text-neutral-200 border border-neutral-700 bg-neutral-800 hover:bg-neutral-800"
           onClick={handleSignOut}
         >
           <LogOut className="h-4 w-4 mr-2" /> 

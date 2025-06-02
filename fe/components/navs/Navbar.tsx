@@ -78,9 +78,9 @@ export default function Navbar() {
             <Button
               onClick={toggleDarkMode}
               aria-label="Toggle Dark Mode"
-              className="p-2 rounded-md bg-neutral-50 dark:bg-neutral-800 focus:outline-none cursor-pointer"
+              className="p-2 rounded-md bg-neutral-50 dark:bg-neutral-800 focus:outline-none cursor-pointer  hover:bg-neutral-100"
             >
-              {isDarkMode ? <Sun className="w-5 h-5 text-neutral-800 dark:text-white" /> : <Moon className="w-5 h-5 text-neutral-800 dark:text-white" />}
+              {isDarkMode ? <Sun className="w-5 h-5 text-neutral-800 dark:text-white" /> : <Moon className="w-5 h-5 text-neutral-800 dark:text-white " />}
             </Button>
 
             <motion.div layoutId="signin" className="flex gap-2">

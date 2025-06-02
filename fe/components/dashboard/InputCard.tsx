@@ -32,7 +32,7 @@ interface InputCardProps {
     }) => Promise<any>;
 }
 
-export default function InputCard({ onSubmit }: InputCardProps) {
+export default function     InputCard({ onSubmit }: InputCardProps) {
     const [prompt, setPrompt] = useState('');
     const [width, setWidth] = useState(1920);
     const [height, setHeight] = useState(1080);
@@ -133,7 +133,7 @@ export default function InputCard({ onSubmit }: InputCardProps) {
                     </div>
                 )}
                 </div>
-                <div className="text-xs text-muted-foreground">
+                <div className="text-xs text-neutral-300">
                 Width ({MIN_WIDTH}-{MAX_WIDTH})
                 </div>
             </div>
@@ -165,7 +165,7 @@ export default function InputCard({ onSubmit }: InputCardProps) {
                     </div>
                 )}
                 </div>
-                <div className="text-xs text-muted-foreground">
+                <div className="text-xs text-neutral-300">
                 Height ({MIN_HEIGHT}-{MAX_HEIGHT})
                 </div>
             </div>
@@ -184,7 +184,7 @@ export default function InputCard({ onSubmit }: InputCardProps) {
                     <SelectItem className="hover:bg-neutral-700" value="60">60 FPS</SelectItem>
                 </SelectContent>
                 </Select>
-                <div className="text-xs text-muted-foreground">
+                <div className="text-xs text-neutral-300">
                 Frames Per Second
                 </div>
             </div>
@@ -216,7 +216,7 @@ export default function InputCard({ onSubmit }: InputCardProps) {
                     </div>
                 )}
                 </div>
-                <div className="text-xs text-muted-foreground">
+                <div className="text-xs text-neutral-300">
                 Frame Count ({MIN_FRAMES}-{MAX_FRAMES})
                 </div>
             </div>
