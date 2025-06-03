@@ -5,7 +5,8 @@ import PromptCard from '@/components/dashboard/PromptCard';
 import VideoGenerationCard from '@/components/dashboard/VideoGenerationCard';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
-import { BACKEND_BASE_URL } from '@/lib/constants';
+
+const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL;
 
 const Page = () => {
   const { data: session } = useSession();
@@ -173,6 +174,7 @@ const Page = () => {
 
       <div className="flex-1 flex bg-neutral-900">
         <div className="w-3/5 border-neutral-800">
+          {/* @ts-expect-error fix */}
           <PromptCard onSubmit={handlePromptSubmit} />
         </div>
 

@@ -6,7 +6,6 @@ import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { AvatarFallback, AvatarImage, Avatar } from "../ui/avatar";
 import { Button } from "../ui/button";
-import { BACKEND_BASE_URL } from "@/lib/constants";
 import { toast } from "sonner";
 import DashLoader from "../loaders/DashLoader";
 
@@ -20,6 +19,8 @@ interface ChatSession {
     genUrl: string;
   }[];
 }
+
+const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL;
 
 export default function Sidebar() {
   const { data: session } = useSession();

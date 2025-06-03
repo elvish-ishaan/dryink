@@ -23,13 +23,24 @@ export type ErrorState = {
     frameCount: string;
   };
 
+interface OnSubmit {
+    success: boolean;
+    data: {
+        chatSessionId: string;
+        signedUrl: string;
+        prompt: string;
+        genRes: string;
+    }
+}
+
+
 interface InputCardProps {
     onSubmit: (prompt: string, params: {
         width: number;
         height: number;
         fps: number;
         frameCount: number;
-    }) => Promise<any>;
+    }) => Promise<OnSubmit>;
 }
 
 export default function     InputCard({ onSubmit }: InputCardProps) {

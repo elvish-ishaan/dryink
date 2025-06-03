@@ -3,7 +3,7 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
 // import Image from "next/image";
-import { Brain, Download, Edit3, Type, Video} from 'lucide-react';
+import { Brain, Download, Edit3, Type} from 'lucide-react';
 
 
 

@@ -1,7 +1,6 @@
 import { Download, Redo2, Undo2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
-import { Skeleton } from "../ui/skeleton";
 import { useRef } from "react";
 import { toast } from "sonner";
 import Loader from "../loaders/Loader";

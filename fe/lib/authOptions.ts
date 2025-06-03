@@ -12,7 +12,7 @@ if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SEC || !process.
     throw new Error('Missing required environment variables.');
 }
 
-const BACKEND_URL = 'http://localhost:5000/api/v1'
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL;
 const JWT_SECRET = process.env.NEXTAUTH_SECRET!;
 
 export const authOptions: NextAuthOptions = {
