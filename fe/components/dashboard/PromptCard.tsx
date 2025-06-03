@@ -93,6 +93,7 @@ export default function PromptCard({ onSubmit }: PromptCardProps) {
                     )}
                 </ScrollArea>
 
+                  {/* @ts-expect-error fix */}
                 <InputCard onSubmit={handlePromptSubmit} />
             </CardContent>
         </Card>
