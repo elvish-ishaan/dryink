@@ -5,7 +5,8 @@ import PromptCard from '@/components/dashboard/PromptCard';
 import VideoGenerationCard from '@/components/dashboard/VideoGenerationCard';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
-import { BACKEND_BASE_URL } from '@/lib/constants';
+
+const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL;
 
 const Page = () => {
   const { data: session } = useSession();
@@ -167,14 +168,16 @@ const Page = () => {
 
   return (
     <div className="flex h-screen bg-neutral-950 text-white">
-      <div className="w-64 flex-shrink-0 border-r border-neutral-800">
+      <div className=" flex-shrink-0 border-r border-neutral-800">
         <Sidebar />
       </div>
 
       <div className="flex-1 flex bg-neutral-900">
-        <div className="w-3/5 border-neutral-800">
-          <PromptCard onSubmit={handlePromptSubmit} />
-        </div>
+      <div className="w-3/5 border-neutral-800 h-full">
+      {/* @ts-expect-error fix */}
+        <PromptCard onSubmit={handlePromptSubmit} />
+      </div>
+
 
         <div className="w-2/5">
           <VideoGenerationCard

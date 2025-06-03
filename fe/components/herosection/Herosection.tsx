@@ -10,10 +10,7 @@ const HeroSection = () => {
   const router = useRouter();
 
   useEffect(() => {
-    startAnimating();
-  }, []);
-
-  const startAnimating = async () => {
+    const startAnimating = async () => {
     await animate(
       ".animate",
       {
@@ -28,14 +25,13 @@ const HeroSection = () => {
       }
     );
 
-    // Animate both button and NotBacked together
     animate(
       ".animate-button",
       {
         opacity: 1,
         filter: "blur(0px)",
         y: 0,
-        scale: [0.8 , 1 ],
+        scale: [0.8, 1],
       },
       {
         type: "spring",
@@ -43,7 +39,43 @@ const HeroSection = () => {
         damping: 20,
       }
     );
-  };
+    };
+  //call func
+  startAnimating();
+}, [animate]);
+
+
+  // const startAnimating = async () => {
+  //   await animate(
+  //     ".animate",
+  //     {
+  //       opacity: 1,
+  //       filter: "blur(0px)",
+  //       y: 0,
+  //     },
+  //     {
+  //       duration: 0.4,
+  //       ease: "easeInOut",
+  //       delay: stagger(0.2),
+  //     }
+  //   );
+
+  //   // Animate both button and NotBacked together
+  //   animate(
+  //     ".animate-button",
+  //     {
+  //       opacity: 1,
+  //       filter: "blur(0px)",
+  //       y: 0,
+  //       scale: [0.8 , 1 ],
+  //     },
+  //     {
+  //       type: "spring",
+  //       stiffness: 300,
+  //       damping: 20,
+  //     }
+  //   );
+  // };
 
   return (
     <section

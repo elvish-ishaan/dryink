@@ -23,16 +23,27 @@ export type ErrorState = {
     frameCount: string;
   };
 
+interface OnSubmit {
+    success: boolean;
+    data: {
+        chatSessionId: string;
+        signedUrl: string;
+        prompt: string;
+        genRes: string;
+    }
+}
+
+
 interface InputCardProps {
     onSubmit: (prompt: string, params: {
         width: number;
         height: number;
         fps: number;
         frameCount: number;
-    }) => Promise<any>;
+    }) => Promise<OnSubmit>;
 }
 
-export default function     InputCard({ onSubmit }: InputCardProps) {
+export default function InputCard({ onSubmit }: InputCardProps) {
     const [prompt, setPrompt] = useState('');
     const [width, setWidth] = useState(1920);
     const [height, setHeight] = useState(1080);
@@ -96,148 +107,145 @@ export default function     InputCard({ onSubmit }: InputCardProps) {
     };
 
     return (
-        <div className="space-y-2 mt-3">
-            <AnimatedPromptInput 
+        <div className="space-y-4 mt-3">
+          {/* Prompt Guidance */}
+          <div className="text-sm text-yellow-400 bg-yellow-900/20 border border-yellow-700 rounded-md px-4 py-2">
+            💡 Add a clear and descriptive prompt to get the best results.
+          </div>
+      
+          <AnimatedPromptInput 
             prompt={prompt}
             setPrompt={setPrompt}
             errors={errors}
             setErrors={setErrors}
             loading={loading}
-            />
-              
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          />
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {/* Width input */}
             <div className="space-y-1">
-                <div className="relative">
+              <div className="relative">
                 <Input
-                    type="number"
-                    min={MIN_WIDTH}
-                    max={MAX_WIDTH}
-                    value={width}
-                    onChange={(e) => {
+                  type="number"
+                  min={MIN_WIDTH}
+                  max={MAX_WIDTH}
+                  value={width}
+                  onChange={(e) => {
                     const val = +e.target.value;
                     setWidth(val);
                     if (val >= MIN_WIDTH && val <= MAX_WIDTH) {
-                        setErrors(prev => ({ ...prev, width: '' }));
+                      setErrors(prev => ({ ...prev, width: '' }));
                     }
-                    }}
-                    placeholder="Width"
-                    className={cn(
-                    "w-full",
-                    errors.width && "border-red-500 focus-visible:ring-red-500"
-                    )}
+                  }}
+                  placeholder="Width"
+                  className={cn("w-full", errors.width && "border-red-500 focus-visible:ring-red-500")}
                 />
                 {errors.width && (
-                    <div className="flex items-center mt-1 text-xs text-red-500">
+                  <div className="flex items-center mt-1 text-xs text-red-500">
                     <AlertCircle className="h-3 w-3 mr-1" />
                     <span className="truncate">{errors.width}</span>
-                    </div>
+                  </div>
                 )}
-                </div>
-                <div className="text-xs text-neutral-300">
+              </div>
+              <div className="text-xs text-neutral-300">
                 Width ({MIN_WIDTH}-{MAX_WIDTH})
-                </div>
+              </div>
             </div>
-            
+      
+            {/* Height input */}
             <div className="space-y-1">
-                <div className="relative">
-            <Input
-                    type="number"
-                    min={MIN_HEIGHT}
-                    max={MAX_HEIGHT}
-                    value={height}
-                    onChange={(e) => {
+              <div className="relative">
+                <Input
+                  type="number"
+                  min={MIN_HEIGHT}
+                  max={MAX_HEIGHT}
+                  value={height}
+                  onChange={(e) => {
                     const val = +e.target.value;
                     setHeight(val);
                     if (val >= MIN_HEIGHT && val <= MAX_HEIGHT) {
-                        setErrors(prev => ({ ...prev, height: '' }));
+                      setErrors(prev => ({ ...prev, height: '' }));
                     }
-                    }}
-                    placeholder="Height"
-                    className={cn(
-                    "w-full",
-                    errors.height && "border-red-500 focus-visible:ring-red-500"
-                    )}
+                  }}
+                  placeholder="Height"
+                  className={cn("w-full", errors.height && "border-red-500 focus-visible:ring-red-500")}
                 />
                 {errors.height && (
-                    <div className="flex items-center mt-1 text-xs text-red-500">
+                  <div className="flex items-center mt-1 text-xs text-red-500">
                     <AlertCircle className="h-3 w-3 mr-1" />
                     <span className="truncate">{errors.height}</span>
-                    </div>
+                  </div>
                 )}
-                </div>
-                <div className="text-xs text-neutral-300">
+              </div>
+              <div className="text-xs text-neutral-300">
                 Height ({MIN_HEIGHT}-{MAX_HEIGHT})
-                </div>
+              </div>
             </div>
-            
+      
+            {/* FPS Select */}
             <div className="space-y-1">
-                <Select 
-                value={fps.toString()}
-                onValueChange={(value) => setFps(+value)}
-                >
-                <SelectTrigger className="w-full ">
-                    <SelectValue placeholder="FPS" />
+              <Select value={fps.toString()} onValueChange={(value) => setFps(+value)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="FPS" />
                 </SelectTrigger>
-                <SelectContent className="bg-neutral-800 ">
-                    <SelectItem className="hover:bg-neutral-700" value="24">24 FPS</SelectItem>
-                    <SelectItem className="hover:bg-neutral-700" value="30">30 FPS</SelectItem>
-                    <SelectItem className="hover:bg-neutral-700" value="60">60 FPS</SelectItem>
+                <SelectContent className="bg-neutral-800">
+                  <SelectItem className="hover:bg-neutral-700" value="24">24 FPS</SelectItem>
+                  <SelectItem className="hover:bg-neutral-700" value="30">30 FPS</SelectItem>
+                  <SelectItem className="hover:bg-neutral-700" value="60">60 FPS</SelectItem>
                 </SelectContent>
-                </Select>
-                <div className="text-xs text-neutral-300">
-                Frames Per Second
-                </div>
+              </Select>
+              <div className="text-xs text-neutral-300">Frames Per Second</div>
             </div>
-            
+      
+            {/* Frame Count */}
             <div className="space-y-1">
-                <div className="relative">
+              <div className="relative">
                 <Input
-                    type="number"
-                    min={MIN_FRAMES}
-                    max={MAX_FRAMES}
-                    value={frameCount}
-                    onChange={(e) => {
+                  type="number"
+                  min={MIN_FRAMES}
+                  max={MAX_FRAMES}
+                  value={frameCount}
+                  onChange={(e) => {
                     const val = +e.target.value;
                     setFrameCount(val);
                     if (val >= MIN_FRAMES && val <= MAX_FRAMES) {
-                        setErrors(prev => ({ ...prev, frameCount: '' }));
+                      setErrors(prev => ({ ...prev, frameCount: '' }));
                     }
-                    }}
-                    className={cn(
-                    "w-full",
-                    errors.frameCount && "border-red-500 focus-visible:ring-red-500"
-                    )}
-                    placeholder="Frames"
+                  }}
+                  placeholder="Frames"
+                  className={cn("w-full", errors.frameCount && "border-red-500 focus-visible:ring-red-500")}
                 />
                 {errors.frameCount && (
-                    <div className="flex items-center mt-1 text-xs text-red-500">
+                  <div className="flex items-center mt-1 text-xs text-red-500">
                     <AlertCircle className="h-3 w-3 mr-1" />
                     <span className="truncate">{errors.frameCount}</span>
-                    </div>
+                  </div>
                 )}
-                </div>
-                <div className="text-xs text-neutral-300">
+              </div>
+              <div className="text-xs text-neutral-300">
                 Frame Count ({MIN_FRAMES}-{MAX_FRAMES})
-                </div>
+              </div>
             </div>
-            </div>
-              
-            <div className="flex justify-end">
+          </div>
+      
+          {/* Generate Button */}
+          <div className="flex justify-end">
             <Button 
-            onClick={handleSubmit}
-            disabled={loading}
-            className="w-full"
+              onClick={handleSubmit}
+              disabled={loading}
+              className="w-full"
             >
-            {loading ? (
+              {loading ? (
                 <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generating...
                 </>
-            ) : (
+              ) : (
                 'Generate'
-            )}
+              )}
             </Button>
-            </div>
+          </div>
         </div>
-    )
+      );
+      
 }

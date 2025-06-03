@@ -26,7 +26,7 @@ export default function AuthPage({ type = "login" }) {
   const { data: session, status } = useSession();
   console.log(session,'session', status)
 
-  const BACKEND_URL = 'http://localhost:5000/api/v1'
+  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL
 
   enum AuthType {
     LOGIN = "login",
@@ -39,6 +39,7 @@ export default function AuthPage({ type = "login" }) {
     try {
       await signIn("github", { callbackUrl: '/dashboard', redirect: false});
     } catch (err) {
+      console.log(err,'err in signing with github')
       setError("Failed to sign in with GitHub.");
     } finally {
       setLoading(false);
@@ -51,6 +52,7 @@ export default function AuthPage({ type = "login" }) {
     try {
        await signIn("google", { callbackUrl: '/dashboard', redirect: false});
     } catch (err) {
+      console.log(err,'err in signing with google')
       setError("Failed to sign in with Google.");
     } finally {
       setLoading(false);
