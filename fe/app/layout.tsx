@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import LayoutShell from "@/components/utils/LayoutShell";
+import AuthProvider from "./providers/AuthProvider";
 
 
 const inter = Inter({ subsets: ["latin"] });
@@ -29,7 +30,11 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <Toaster />
-          <LayoutShell>{children}</LayoutShell>
+          <LayoutShell>
+            <AuthProvider>
+              {children}
+            </AuthProvider>
+          </LayoutShell>
         </ThemeProvider>
       </body>
     </html>

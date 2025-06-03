@@ -16,20 +16,27 @@
     "@aws-sdk/client-s3": "^3.806.0",
     "@aws-sdk/s3-request-presigner": "^3.806.0",
     "@google/genai": "^0.13.0",
+    "@prisma/client": "^6.8.2",
     "@types/cors": "^2.8.18",
     "@types/express": "^5.0.1",
+    "@types/jsonwebtoken": "^9.0.9",
     "@types/uuid": "^10.0.0",
+    "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
     "openai": "^4.98.0",
-    "prisma": "^6.7.0",
     "redis": "^5.0.1",
-    "typescript": "^5.8.3",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/node": "^22.15.26",
     "esbuild": "0.25.4",
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "prisma": "^6.8.2",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
   }
 }

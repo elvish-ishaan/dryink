@@ -4,7 +4,7 @@ import { modifySketchSystemPrompt, newSystemPrompt, systemPrompt, userPromptEnha
 import { redisPublisher } from "../configs/redisConfig";
 import { v4 as uuidv4 } from 'uuid';
 import { getS3SignedUrl } from "../lib/utils";
-import OpenAI from "openai";
+import { prisma } from "../client/prismaClient";
 
 enum JobStatus {
     PENDING = "pending",
@@ -42,6 +42,7 @@ const waitForJobCompletion = (jobId: string): Promise<JobData> => {
 
 // --- Main Prompt Handler ---
 export const handlePrompt = async (req: Request, res: Response) => {
+  console.log(req.user,'getting user from req')
   try {
     const { prompt, height, width, fps, frameCount } = req.body;
 
@@ -92,16 +93,63 @@ export const handlePrompt = async (req: Request, res: Response) => {
          process.env.AWS_BUCKET as string,
         `${jobData.jobId}.mp4`,
       );
+
+      try {
+        //first find the user
+     const user = await prisma.user.findUnique({
+        where: {
+          email: req.user?.email,
+        },
+        include:{
+          chatSessions: {
+            include: {
+              chats: true
+            }
+          }
+        }
+      });
+      console.log('init user', user)
+      if(!user){
+        res.status(401).json({
+          success: false,
+          message: 'User not found',
+        });
+        return
+      }
+
+      //create a new chat session
+      const chatSession = await prisma.chatSession.create({
+        data: {
+          userId: user?.id,
+        },
+      });
+      console.log('created chat session', chatSession)
+
+      //create a new chat
+      const chat = await prisma.chat.create({
+        data: {
+          chatSessionId: chatSession.id,
+          prompt,
+          responce: response.text as string,
+          genUrl: signedUrl,
+        },
+      });
+      console.log('created chat', chat)
+ 
       console.log('sending responce.................')
       res.json({
         success: true,
         data: {
+          chatSessionId: chatSession.id,
           signedUrl,
           prompt,
           genRes: response.text,
         }
       });
       return
+      } catch (error) {
+        console.log(error,'getting error in database operation in handlePrompt')
+      }
     } else {
       res.status(500).json({
         success: false,
@@ -122,8 +170,9 @@ export const handlePrompt = async (req: Request, res: Response) => {
 
 // --- Follow-up Prompt Handler ---
 export const handleFollowUpPrompt = async (req: Request, res: Response) => {
+  console.log(req.body,'this is req body is follow up controller')
   try {
-    const { followUprompt, previousGenRes, height, width, fps, frameCount } = req.body;
+    const { followUprompt, previousGenRes, height, width, fps, frameCount, chatSessionId } = req.body;
 
     if (!followUprompt || !previousGenRes || !height || !width || !fps || !frameCount) {
       res.status(400).json({
@@ -161,6 +210,31 @@ export const handleFollowUpPrompt = async (req: Request, res: Response) => {
         process.env.AWS_BUCKET as string,
         `${jobData.jobId}.mp4`
       );
+
+      // Create follow-up chat
+      const chat = await prisma.chat.create({
+        data: {
+          chatSessionId: chatSessionId,
+          prompt: followUprompt,
+          responce: response.text as string,
+          genUrl: signedUrl,
+        },
+      });
+
+      //show updated user with updated chat
+      const updatedUser = await prisma.user.findFirst({
+        where: {  id: req.user.id },
+        include: {
+          chatSessions: {
+            include: {
+              chats: true
+            }
+          }
+        },
+      })
+      console.log(updatedUser,'this is updated user chats with follow up')
+
+      //return response
       res.json({
         success: true,
         data: {

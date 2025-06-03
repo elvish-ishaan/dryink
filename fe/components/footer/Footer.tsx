@@ -1,5 +1,6 @@
 import { Facebook, Instagram, Twitter, Linkedin } from "lucide-react";
 import Image from "next/image";
+import logo from '@/assets/logo.svg'
 
 export default function Footer() {
   return (
@@ -8,8 +9,8 @@ export default function Footer() {
         {/* Brand & Social */}
         <div className="space-y-4 col-span-1 md:col-span-1">
           <div className="flex items-center space-x-2">
-            <div className="bg-black dark:bg-white text-white dark:text-black p-2 rounded-md font-bold text-sm">
-              <Image src="/logo.png" alt="logo" width={40} height={40} />
+            <div className=" text-white dark:text-black p-2 rounded-md font-bold text-sm">
+              <Image src={logo} alt="logo" width={40} height={40} />
             </div>
             <span className="text-lg font-semibold text-gray-900 dark:text-white">
               Dryink
