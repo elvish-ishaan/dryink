@@ -1,16 +1,16 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Sidebar from '@/components/dashboard/Sidebar';
 import PromptCard from '@/components/dashboard/PromptCard';
 import VideoGenerationCard from '@/components/dashboard/VideoGenerationCard';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
+import axios from 'axios';
 
 const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL;
 
 const Page = () => {
   const { data: session } = useSession();
-  console.log(session,'getting user.......')
   const [currentVideoUrl, setCurrentVideoUrl] = useState<string | null>(null);
   const [currentResponse, setCurrentResponse] = useState<string>('');
   const [currentPrompt, setCurrentPrompt] = useState<string>('');
@@ -24,6 +24,10 @@ const Page = () => {
     currentIndex: -1,
   });
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
+  
+  // Use ref to store interval ID
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const handleResize = () => {
@@ -36,6 +40,80 @@ const Page = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Function to start polling
+  const startPolling = (jobId: string) => {
+    // Clear any existing interval
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+
+    intervalRef.current = setInterval(async () => {
+      try {
+        const res = await axios.get(`${BACKEND_BASE_URL}/prompt/${jobId}`, {
+          headers: { 
+            'Content-Type': 'application/json',
+            "Authorization": `Bearer ${session?.user?.accessToken}`
+          },
+        });
+
+        console.log(res, 'getting res from backend');
+        
+        if (!res.data.success) {
+          return;
+        }
+
+        const data = res.data;
+        console.log(data, 'getting data from backend');
+        
+        if (data.jobStatus === 'completed') {
+          // Stop polling
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
+          
+          setLoading(false);
+          toast.success('Video generation completed');
+          setCurrentVideoUrl(data.genUrl);
+          
+          // Update video history with the completed video
+          setVideoHistory(prev => {
+            const newUrls = [...prev.urls];
+            if (newUrls.length > 0) {
+              newUrls[newUrls.length - 1] = {
+                ...newUrls[newUrls.length - 1],
+                url: data.genUrl
+              };
+            }
+            return {
+              ...prev,
+              urls: newUrls
+            };
+          });
+        }
+      } catch (error) {
+        console.error('Polling error:', error);
+      }
+    }, 3000);
+  };
+
+  // Function to stop polling
+  const stopPolling = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, []);
+
   const handlePromptSubmit = async (prompt: string, params: {
     width: number;
     height: number;
@@ -43,6 +121,7 @@ const Page = () => {
     frameCount: number;
   }) => {
     setLoading(true);
+    
     try {
       const endpoint = isFollowUp
         ? `${BACKEND_BASE_URL}/prompt/followUpPrompt`
@@ -59,9 +138,9 @@ const Page = () => {
             prompt,
             ...params
           };
-
-      console.log(body,'sending body...........')
-
+          
+      console.log(body, 'sending body to backend');
+      
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 
@@ -70,57 +149,59 @@ const Page = () => {
         },
         body: JSON.stringify(body),
       });
+      
       const data = await response.json();
-      console.log(data,'getting data from backend')
+      console.log(data, 'getting data from backend');
 
       if (!data.success) {
-        //show toast
         toast.error(data.message);
+        setLoading(false);
         return;
       }
 
-      if(data.data?.chatSessionId){
-        setSessionId(data.data?.chatSessionId);
+      // Set session ID if this is the first prompt
+      if (data.data?.chatSessionId) {
+        setSessionId(data.data.chatSessionId);
       }
 
-      //include sessionId if initial prompt
-      let result;
-      if(isFollowUp){
-        result={
-          // sessionId: data.data?.chatSessionId,
-          videoUrl: data.data.signedUrl,
-          genRes: data.data.genRes,
-          prompt: data.data.prompt || prompt
-        }
-      }else {
-        result = {
-          videoUrl: data.data.signedUrl,
-          genRes: data.data.genRes,
-          prompt: data.data.prompt || prompt
-        };
+      // Set current job ID
+      if (data.data?.jobId) {
+        setCurrentJobId(data.data.jobId);
+        // Start polling for this job
+        startPolling(data.data.jobId);
       }
 
-      setCurrentVideoUrl(result.videoUrl);
-      setCurrentResponse(result.genRes);
-      setCurrentPrompt(result.prompt);
+      // Set current prompt and response immediately
+      setCurrentPrompt(prompt);
+      setCurrentResponse(''); // Will be updated when polling completes
+      setCurrentVideoUrl(null); // Will be updated when polling completes
       setIsFollowUp(true);
 
-      const newUrls = videoHistory.urls.slice(0, videoHistory.currentIndex + 1);
-      newUrls.push({
-        url: result.videoUrl,
-        prompt: result.prompt,
-        genRes: result.genRes
-      });
-      setVideoHistory({
-        urls: newUrls,
-        currentIndex: newUrls.length - 1
+      // Add to history (video URL will be updated when polling completes)
+      const newHistoryItem = {
+        url: '', // Will be updated when video is ready
+        prompt: prompt,
+        genRes: '' // Will be updated when polling completes
+      };
+
+      setVideoHistory(prev => {
+        const newUrls = prev.urls.slice(0, prev.currentIndex + 1);
+        newUrls.push(newHistoryItem);
+        return {
+          urls: newUrls,
+          currentIndex: newUrls.length - 1
+        };
       });
 
-      return result;
+      return {
+        videoUrl: '',
+        genRes: '',
+        prompt: prompt
+      };
+
     } catch (err) {
       console.error(err);
       toast.error('Failed to generate video');
-    } finally {
       setLoading(false);
     }
   };
@@ -168,16 +249,14 @@ const Page = () => {
 
   return (
     <div className="flex h-screen bg-neutral-950 text-white">
-      <div className=" flex-shrink-0 border-r border-neutral-800">
+      <div className="flex-shrink-0 border-r border-neutral-800">
         <Sidebar />
       </div>
 
       <div className="flex-1 flex bg-neutral-900">
-      <div className="w-3/5 border-neutral-800 h-full">
-      {/* @ts-expect-error fix */}
-        <PromptCard onSubmit={handlePromptSubmit} />
-      </div>
-
+        <div className="w-3/5 border-neutral-800 h-full">
+          <PromptCard onSubmit={handlePromptSubmit} />
+        </div>
 
         <div className="w-2/5">
           <VideoGenerationCard

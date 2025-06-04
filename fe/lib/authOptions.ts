@@ -45,6 +45,7 @@ export const authOptions: NextAuthOptions = {
                         email,
                         password,
                     });
+                    console.log(res,'geeting res from login')
                     if (!res.data?.success) {
                         throw new Error(res.data?.message);
                     }
@@ -71,7 +72,6 @@ export const authOptions: NextAuthOptions = {
     
     callbacks: {
         async jwt({ token, user }) {
-            console.log(user,'getting user in jwt', token, 'getting token in jwt')
           // Only create custom access token on initial login
           if (user) {
             token.id = user.id;
@@ -98,6 +98,9 @@ export const authOptions: NextAuthOptions = {
 
         async signIn({ user, account }): Promise<boolean> {
             if (user?.email) {
+                if (account?.provider === 'credentials') {
+                  return true; // skip signup for credentials-based login
+                }
                 try {
                      //registered user if first time login
                     const res = await axios.post(`${BACKEND_URL}/auth/signup`, {

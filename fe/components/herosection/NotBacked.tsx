@@ -13,7 +13,7 @@ const NotBacked = ({ className , style } :  { className?: string, style?: React.
             backdrop-blur-lg
         "
       >
-        <span className="font-medium  text-neutral-800 dark:text-neutral-50">NOT</span>
+        <span className=" font-thin text-sm text-neutral-800 dark:text-neutral-200">NOT!</span>
         <span>Backed by</span>
         <span
           className="
@@ -22,7 +22,7 @@ const NotBacked = ({ className , style } :  { className?: string, style?: React.
             w-6 h-6 text-sm font-bold
           "
         >
-          Y
+         Y
         </span>
         <span>Combinator</span>
         <span role="img" aria-label="shrug emoji">

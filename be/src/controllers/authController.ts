@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
-import { prisma } from "../client/prismaClient";
+import prisma from "../client/prismaClient";
 
 
 export const handleLogin = async (req: Request, res: Response) => {
@@ -50,8 +50,8 @@ export const handleLogin = async (req: Request, res: Response) => {
 
     //make user password null
     user.password = null;
-    console.log(user,'getting user from sucess login')
 
+    console.log('login sucessfully')
     //return responce
     res.json({
       success: true,

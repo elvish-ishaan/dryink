@@ -1,12 +1,10 @@
 "use client";
-
 import InputCard from "@/components/dashboard/InputCard";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { PromptItem } from "@/types/types";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 interface PromptCardProps {
   onSubmit: (
@@ -16,19 +14,17 @@ interface PromptCardProps {
       height: number;
       fps: number;
       frameCount: number;
-    },
-    isFollowUp?: boolean
+    }
   ) => Promise<{
     videoUrl: string;
     genRes: string;
     prompt: string;
-  }>;
+  } | undefined>;
 }
 
 export default function PromptCard({ onSubmit }: PromptCardProps) {
   const [promptHistory, setPromptHistory] = useState<PromptItem[]>([]);
-
-
+    
   const handlePromptSubmit = async (
     prompt: string,
     params: {
@@ -36,8 +32,7 @@ export default function PromptCard({ onSubmit }: PromptCardProps) {
       height: number;
       fps: number;
       frameCount: number;
-    },
-    isFollowUp: boolean = false
+    }
   ) => {
     const timestamp = Date.now();
     const newPrompt: PromptItem = {
@@ -48,19 +43,22 @@ export default function PromptCard({ onSubmit }: PromptCardProps) {
     setPromptHistory((prev) => [...prev, newPrompt]);
 
     try {
-      const result = await onSubmit(prompt, params, isFollowUp);
+      const result = await onSubmit(prompt, params);
+      
+      // Update the prompt status to completed
       setPromptHistory((prev) =>
         prev.map((item) =>
           item.timestamp === timestamp
             ? {
                 ...item,
                 status: "completed",
-                videoUrl: result?.videoUrl,
-                genRes: result?.genRes,
+                videoUrl: result?.videoUrl || '',
+                genRes: result?.genRes || '',
               }
             : item
         )
       );
+      
       return result;
     } catch (err) {
       console.error(err);
@@ -71,62 +69,61 @@ export default function PromptCard({ onSubmit }: PromptCardProps) {
             : item
         )
       );
+      throw err; // Re-throw to maintain error handling in parent
     }
   };
+
   return (
     <Card className="flex flex-col h-full bg-neutral-800 rounded-none overflow-hidden">
-  <CardHeader className="shrink-0">
-    <CardTitle>Prompt History</CardTitle>
-  </CardHeader>
+      <CardHeader className="shrink-0">
+        <CardTitle>Prompt History</CardTitle>
+      </CardHeader>
 
-  <CardContent className="flex flex-col h-full px-2 pb-2 overflow-hidden">
-    {/* Scrollable prompt history */}
-    <div className="flex-1 overflow-y-auto min-h-0 border border-neutral-600 p-2 rounded-lg">
-      <div className="space-y-2 pr-1">
-        {promptHistory.length === 0 ? (
-          <p className="text-sm text-neutral-300">No prompts yet.</p>
-        ) : (
-          promptHistory.map((item) => (
-            <div
-              key={item.timestamp}
-              className={cn(
-                "p-2 border text-sm rounded-lg",
-                item.status === "completed" && "border-neutral-500",
-                item.status === "pending" && "border-neutral-500 font-bold italic",
-                item.status === "canceled" && "border-neutral-500"
-              )}
-            >
-              <div className="flex justify-between items-center">
-                <p className="text-muted-foreground flex-grow break-words pr-4">
-                  {item.prompt}
-                </p>
-                <Badge
-                  variant={
-                    item.status === "completed"
-                      ? "default"
-                      : item.status === "pending"
-                      ? "outline"
-                      : "destructive"
-                  }
+      <CardContent className="flex flex-col h-full px-2 pb-2 overflow-hidden">
+        {/* Scrollable prompt history */}
+        <div className="flex-1 overflow-y-auto min-h-0 border border-neutral-600 p-2 rounded-lg">
+          <div className="space-y-2 pr-1">
+            {promptHistory.length === 0 ? (
+              <p className="text-sm text-neutral-300">No prompts yet.</p>
+            ) : (
+              promptHistory.map((item) => (
+                <div
+                  key={item.timestamp}
+                  className={cn(
+                    "p-2 border text-sm rounded-lg",
+                    item.status === "completed" && "border-neutral-500",
+                    item.status === "pending" && "border-neutral-500 font-bold italic",
+                    item.status === "canceled" && "border-neutral-500"
+                  )}
                 >
-                  {item.status === "pending" ? "Generating" : item.status.toUpperCase()}
-                </Badge>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
+                  <div className="flex justify-between items-center">
+                    <p className="text-muted-foreground flex-grow break-words pr-4">
+                      {item.prompt}
+                    </p>
+                    <Badge
+                      variant={
+                        item.status === "completed"
+                          ? "default"
+                          : item.status === "pending"
+                          ? "outline"
+                          : "destructive"
+                      }
+                    >
+                      {item.status === "pending" ? "Generating" : item.status.toUpperCase()}
+                    </Badge>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
 
-    {/* Sticky InputCard */}
-    <div className="shrink-0 mt-2">
-      {/* @ts-expect-error fix */}
-      <InputCard onSubmit={handlePromptSubmit} />
-    </div>
-  </CardContent>
-</Card>
-
-
+        {/* Sticky InputCard */}
+        <div className="shrink-0 mt-2">
+          {/* @ts-expect-error fix */}
+          <InputCard onSubmit={handlePromptSubmit} />
+        </div>
+      </CardContent>
+    </Card>
   );
 }
-  
