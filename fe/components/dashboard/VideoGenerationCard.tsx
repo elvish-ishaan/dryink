@@ -1,4 +1,4 @@
-import { Download, Redo2, Undo2 } from "lucide-react";
+import { Download } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { useRef } from "react";
@@ -19,10 +19,10 @@ interface VideoGenerationCardProps {
 export default function VideoGenerationCard({
     currentVideoUrl,
     prompt,
-    onUndo,
-    onRedo,
-    canUndo,
-    canRedo,
+    //onUndo,
+    //onRedo,
+    //canUndo,
+    //canRedo,
     loading
 }: VideoGenerationCardProps) {
     const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -34,6 +34,7 @@ export default function VideoGenerationCard({
         a.download = 'generated-video.mp4';
         a.click();
     };
+
 
     return (
         <Card className="flex bg-neutral-800 rounded-none flex-col h-full">
@@ -65,7 +66,7 @@ export default function VideoGenerationCard({
                             />
                         </div>
                         <div className="flex gap-1 w-full max-w-3xl justify-center mt-1">
-                            <Button 
+                            {/* <Button 
                                 onClick={onUndo} 
                                 variant="outline" 
                                 size="sm"
@@ -74,21 +75,21 @@ export default function VideoGenerationCard({
                             >
                                 <Undo2 className="w-4 h-4 mr-1" />
                                 Undo
-                            </Button>
+                            </Button> */}
                             <Button onClick={handleDownload} variant="outline" size="sm">
                                 <Download className="w-4 h-4 mr-1" />
                                 Download
                             </Button>
-                            <Button 
+                            {/* <Button 
                                 onClick={onRedo} 
                                 variant="outline" 
                                 size="sm"
                                 disabled={!canRedo}
-                                className={!canRedo ? "opacity-50" : ""}
+                                className={ !canRedo ? "opacity-50 hidden" : " hidden"}
                             >
                                 <Redo2 className="w-4 h-4 mr-1" />
                                 Redo
-                            </Button>
+                            </Button> */}
                         </div>
                         <div className="text-xs text-muted-foreground text-center mt-1 max-w-3xl">
                             {prompt}

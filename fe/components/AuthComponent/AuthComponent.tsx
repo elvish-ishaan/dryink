@@ -4,14 +4,16 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
-import { signIn, useSession } from "next-auth/react";
+import { useMemo, useState } from "react";
+import { signIn } from "next-auth/react";
 import axios from "axios";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import githubLogo from '@/public/github.svg'
 import logo from '@/assets/logo.svg'
 import googleLogo from '@/assets/google.png'
+import Avatar, { genConfig } from 'react-nice-avatar'
+
 
 
 export default function AuthPage({ type = "login" }) {
@@ -22,9 +24,9 @@ export default function AuthPage({ type = "login" }) {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter()
+  const avatarConfig = useMemo(() => genConfig(), [])
+  
 
-  const { data: session, status } = useSession();
-  console.log(session,'session', status)
 
   const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL
 
@@ -231,16 +233,9 @@ export default function AuthPage({ type = "login" }) {
           {/* Avatar Group */}
           <div className="flex justify-center mb-4">
             <div className="flex -space-x-2">
-              {[1, 2, 3, 4, 5, 6].map((_, i) => (
-                <Image
-                  key={i}
-                  src={`avatar${i}.svg`}
-                  alt="user"
-                  width={40}
-                  height={40}
-                  className="rounded-full border-2 border-white"
-                />
-              ))}
+              {[1,2,3,4,5,6].map(( _, index) => {
+                 return <Avatar key={index} className=" size-12"  {...avatarConfig} />
+              })}
             </div>
           </div>
 

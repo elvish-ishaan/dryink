@@ -17,6 +17,7 @@ model User {
   authProvider  String?  
   chatSessions ChatSession[]
   createdOn  DateTime @default(now())
+  userJobs Job[]
 }
 
 model ChatSession {
@@ -33,5 +34,15 @@ model Chat {
   chatSession ChatSession @relation(fields: [chatSessionId], references: [id])
   prompt String
   responce String
-  genUrl String
+  genUrl String?
+}
+
+
+model Job {
+  id String @default(uuid()) @unique
+  userId String
+  status String
+  User User @relation(fields: [userId], references: [id])
+  date  DateTime @default(now())
+  genUrl String?
 }

@@ -1,11 +1,10 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
-import { prisma } from "../client/prismaClient";
+import prisma from "../client/prismaClient";
 
 
 export const handleLogin = async (req: Request, res: Response) => {
   try {
-    console.log('req hitted............', req.body)
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -50,7 +49,6 @@ export const handleLogin = async (req: Request, res: Response) => {
 
     //make user password null
     user.password = null;
-    console.log(user,'getting user from sucess login')
 
     //return responce
     res.json({
@@ -75,12 +73,10 @@ enum AuthProvider {
 }
 
 export const handleSignUp = async (req: Request, res: Response) => {
-  console.log(req.body,'getting req body..........')
   try {
     const { name, email, password, authProvider, id: providerGeneratedId } = req.body;
 
     if (!name || !email || !authProvider) {
-      console.log('missing params............')
       res.status(400).json({
         success: false,
         message: 'All parameters are required',

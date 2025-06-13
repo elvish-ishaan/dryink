@@ -4,6 +4,7 @@ import { generateVideo } from "./core/operation";
 import { uploadToS3 } from "./configs/s3Config";
 import fs from 'fs'
 import path from "path";
+import prisma from "./configs/prismaclient";
 
 
 const app = express();
@@ -20,17 +21,16 @@ const taskQueueKey = 'tasks';
 
 enum JobStatus {
     PENDING = "pending",
+    FAILED = "failed",
     COMPLETED = "completed",
 }
 
 async function startWorker() {
-    while (true) {
       try {
-        // Use brpop to block until a task is available
-        const result = await redisSubscriber.brPop(taskQueueKey, 0)
-
-        if(result){
-          const jobData = JSON.parse(result.element);                    
+        //get the job when available
+        redisSubscriber.subscribe(taskQueueKey, async (job) => {
+          const jobData = JSON.parse(job);
+          console.log(jobData, 'getting job data')
           //generating video
           const videoPath = await generateVideo({
             htmlContent: jobData.response,
@@ -40,40 +40,53 @@ async function startWorker() {
             frameCount: jobData.frameCount || 100,  // Number of frames to render FIX IT LATER  
             videoName: 'output.mp4',
           });
-
-      //upload the video to s3
-      const uploadedObjUrl = await uploadToS3(videoPath, `${jobData.jobId}.mp4`);
-
-      //remove the whole directory from local storage
-      //go back to one level then remove the directory
-      const folderToDlt = path.dirname(videoPath)
-      console.log(folderToDlt, 'folder to delete')
-      try {
-     fs.rm(folderToDlt, { recursive: true }, (err) => {
-        if (err) {
-          console.error(`Error deleting folder ${folderToDlt}:`, err);
-        } else {
-          console.log(`Successfully deleted folder: ${folderToDlt}`);
-        }
-      });
-    } catch (error) {
-      console.error(`Error deleting folder ${folderToDlt}:`, error);
-    }
-      //return the job to  redis channel
-      const completionInfo = {
-        taskId: jobData.jobId,
-        status: JobStatus.COMPLETED,
-        outputFileLink: uploadedObjUrl,
-      };
-      
-      console.log('adding completion to reids channel')
-      // Publish result
-      await redisSubscriber.publish(`job:done:${completionInfo.taskId}`, JSON.stringify(completionInfo));
-        }
+          
+          //upload the video to s3
+          const uploadedObjUrl = await uploadToS3(videoPath, `${jobData.jobId}.mp4`);
+          if(!uploadedObjUrl){
+            console.log('error in uploading to s3')
+          }
+          
+          //remove the whole directory from local storage
+          //go back to one level then remove the directory
+          const folderToDlt = path.dirname(videoPath)
+          console.log(folderToDlt, 'folder to delete')
+          try {
+            fs.rm(folderToDlt, { recursive: true }, (err) => {
+              if (err) {
+                console.error(`Error deleting folder ${folderToDlt}:`, err);
+              } else {
+                console.log(`Successfully deleted folder: ${folderToDlt}`);
+              }
+            });
+          }catch{
+            console.log('error in deleting folder')
+          }
+          //update the job status to completed in db
+            await prisma.job.update({
+            where: {
+              id: jobData.jobId,
+            },
+            data: {
+              status: JobStatus.COMPLETED,
+              genUrl: uploadedObjUrl,
+            }
+          })
+          //update the chat also
+          await prisma.chat.update({
+            where: {
+              id: jobData.chatId,
+            },
+            data: {
+              responce: jobData.response,
+              genUrl: uploadedObjUrl,
+            }
+          })
+        });
       } catch (error) {
         console.error('Error processing task:', error);
+        throw new Error('Error processing task');
       }
-    }
 }
 
 console.log('Worker started. Waiting for tasks...');

@@ -1,18 +1,20 @@
 import { Request, Response } from "express";
-import { GoogleGenAI } from "@google/genai";
+import { Chats, GoogleGenAI } from "@google/genai";
 import { modifySketchSystemPrompt, newSystemPrompt, systemPrompt, userPromptEnhancerSystemPrompt } from "../lib/prompts";
 import { redisPublisher } from "../configs/redisConfig";
 import { v4 as uuidv4 } from 'uuid';
 import { getS3SignedUrl } from "../lib/utils";
-import { prisma } from "../client/prismaClient";
+import prisma from "../client/prismaClient";
 
 enum JobStatus {
     PENDING = "pending",
     COMPLETED = "completed",
+    FAILED = "failed",
 }
 
 interface JobData {
   jobId: string,
+  chatId: string,
   status: JobStatus,
   response?: string | null,
   height?: number,
@@ -21,28 +23,8 @@ interface JobData {
   frameCount?: number,
 }
 
-// --- Redis Wait Helper ---
-const waitForJobCompletion = (jobId: string): Promise<JobData> => {
-  return new Promise((resolve, reject) => {
-    const channel = `job:done:${jobId}`;
-
-    const handleMessage = (message: string) => {
-      try {
-        const result = JSON.parse(message);
-        redisPublisher.unsubscribe(channel);
-        resolve(result);
-      } catch (err) {
-        reject(err);
-      }
-    };
-
-    redisPublisher.subscribe(channel, handleMessage);
-  });
-};
-
 // --- Main Prompt Handler ---
 export const handlePrompt = async (req: Request, res: Response) => {
-  console.log(req.user,'getting user from req')
   try {
     const { prompt, height, width, fps, frameCount } = req.body;
 
@@ -54,7 +36,7 @@ export const handlePrompt = async (req: Request, res: Response) => {
       return
     }
 
-    console.log('generating main responce from code gen model............')
+    console.log('generating main response from code gen model............')
     const startTime = Date.now();
     const ai = new GoogleGenAI({ apiKey: process.env.LLM_API_KEY });
     const response = await ai.models.generateContent({
@@ -69,34 +51,28 @@ export const handlePrompt = async (req: Request, res: Response) => {
     console.log('time taken:', endTime - startTime)
     console.log('response generated........')
 
+    //init a job for user
+    const job = await prisma.job.create({
+      data: {
+        userId: req.user?.id,
+        status: JobStatus.PENDING,
+      }
+    })
 
-    const jobData: JobData = {
-      jobId: uuidv4(),
-      status: JobStatus.PENDING,
-      response: response.text,
-      height,
-      width,
-      fps,
-      frameCount,
-    };
+    if(!job){
+      res.status(500).json({
+        success: false,
+        message: 'Unable to create job'
+      })
+      return
+    }
 
-    console.log('pushing job to queue...........');
-    // Push job to queue
-    await redisPublisher.lPush('tasks', JSON.stringify(jobData));
-    console.log('waiting to finish........')
-    // Wait for job to complete via Redis pub/sub
-    const result = await waitForJobCompletion(jobData.jobId);
-    console.log('getting result........')
-
-    if (result.status === JobStatus.COMPLETED) {
-      const signedUrl = await getS3SignedUrl(
-         process.env.AWS_BUCKET as string,
-        `${jobData.jobId}.mp4`,
-      );
-
-      try {
-        //first find the user
-     const user = await prisma.user.findUnique({
+    //update the other meta data to db
+    let chatSession;
+    let chat;
+    try {
+      //first find the user
+      const user = await prisma.user.findUnique({
         where: {
           email: req.user?.email,
         },
@@ -108,7 +84,6 @@ export const handlePrompt = async (req: Request, res: Response) => {
           }
         }
       });
-      console.log('init user', user)
       if(!user){
         res.status(401).json({
           success: false,
@@ -118,45 +93,68 @@ export const handlePrompt = async (req: Request, res: Response) => {
       }
 
       //create a new chat session
-      const chatSession = await prisma.chatSession.create({
+      chatSession = await prisma.chatSession.create({
         data: {
           userId: user?.id,
         },
       });
-      console.log('created chat session', chatSession)
 
       //create a new chat
-      const chat = await prisma.chat.create({
+      chat = await prisma.chat.create({
         data: {
           chatSessionId: chatSession.id,
           prompt,
           responce: response.text as string,
-          genUrl: signedUrl,
         },
       });
-      console.log('created chat', chat)
- 
-      console.log('sending responce.................')
-      res.json({
-        success: true,
-        data: {
-          chatSessionId: chatSession.id,
-          signedUrl,
-          prompt,
-          genRes: response.text,
-        }
-      });
-      return
-      } catch (error) {
-        console.log(error,'getting error in database operation in handlePrompt')
-      }
-    } else {
+    
+    } catch (error) {
+      console.log(error,'getting error in database operation in handlePrompt')
+    }
+
+    if(!chatSession){
       res.status(500).json({
         success: false,
-        message: 'Job failed or incomplete',
-      });
+        message: 'Unable to create chat session'
+      })
       return
     }
+
+    if(!chat){
+      res.status(500).json({
+        success: false,
+        message: 'Unable to create chat'
+      })
+      return
+    }
+    
+    //return jobid to user immediately
+    res.json({
+      success: true,
+      data: {
+        chatSessionId: chatSession?.id,
+        jobId: job?.id,
+        prompt: prompt,
+        genRes: response.text,
+      },
+    });
+
+    //create a job for redis
+    const jobData: JobData = {
+      jobId: job.id,
+      chatId: chat?.id,
+      status: JobStatus.PENDING,
+      response: response.text,
+      height,
+      width,
+      fps,
+      frameCount,
+    };
+
+    //now publish the job to redis
+    console.log('job published...........');
+    // Push job to queue
+    await redisPublisher.publish('tasks', JSON.stringify(jobData));
 
   } catch (error) {
     console.error('handlePrompt error:', error);
@@ -170,11 +168,10 @@ export const handlePrompt = async (req: Request, res: Response) => {
 
 // --- Follow-up Prompt Handler ---
 export const handleFollowUpPrompt = async (req: Request, res: Response) => {
-  console.log(req.body,'this is req body is follow up controller')
   try {
     const { followUprompt, previousGenRes, height, width, fps, frameCount, chatSessionId } = req.body;
 
-    if (!followUprompt || !previousGenRes || !height || !width || !fps || !frameCount) {
+    if (!followUprompt || !previousGenRes || !height || !width || !fps || !frameCount || !chatSessionId) {
       res.status(400).json({
         success: false,
         message: 'All parameters are required',
@@ -191,8 +188,54 @@ export const handleFollowUpPrompt = async (req: Request, res: Response) => {
       },
     });
 
+    //init a job for user
+    const job = await prisma.job.create({
+      data: {
+        userId: req.user?.id,
+        status: JobStatus.PENDING,
+      }
+    })
+
+    if(!job){
+      res.status(500).json({
+        success: false,
+        message: 'Unable to create job'
+      })
+      return
+    }
+
+    // Create follow-up chat
+    const chat = await prisma.chat.create({
+      data: {
+        chatSessionId: chatSessionId,
+        prompt: followUprompt,
+        responce: response.text as string,
+      },
+    });
+
+    if(!chat){
+      res.status(500).json({
+        success: false,
+        message: 'Unable to create chat'
+      })
+      return
+    }
+
+    // //return jobid to user immediately
+    res.json({
+      success: true,
+      data: {
+        chatSessionId: chatSessionId,
+        jobId: job?.id,
+        prompt: followUprompt,
+        genRes: response.text,
+      },
+    });
+
+    //init job
     const jobData: JobData = {
-      jobId: uuidv4(),
+      jobId: job.id,
+      chatId: chat?.id,
       status: JobStatus.PENDING,
       response: response.text,
       height,
@@ -201,56 +244,9 @@ export const handleFollowUpPrompt = async (req: Request, res: Response) => {
       frameCount,
     };
 
-    await redisPublisher.lPush('tasks', JSON.stringify(jobData));
-
-    const result = await waitForJobCompletion(jobData.jobId);
-
-    if (result.status === JobStatus.COMPLETED) {
-      const signedUrl = await getS3SignedUrl(
-        process.env.AWS_BUCKET as string,
-        `${jobData.jobId}.mp4`
-      );
-
-      // Create follow-up chat
-      const chat = await prisma.chat.create({
-        data: {
-          chatSessionId: chatSessionId,
-          prompt: followUprompt,
-          responce: response.text as string,
-          genUrl: signedUrl,
-        },
-      });
-
-      //show updated user with updated chat
-      const updatedUser = await prisma.user.findFirst({
-        where: {  id: req.user.id },
-        include: {
-          chatSessions: {
-            include: {
-              chats: true
-            }
-          }
-        },
-      })
-      console.log(updatedUser,'this is updated user chats with follow up')
-
-      //return response
-      res.json({
-        success: true,
-        data: {
-          signedUrl,
-          followUprompt,
-          genRes: response.text,
-        }
-      });
-      return
-    } else {
-      res.status(500).json({
-        success: false,
-        message: 'Job failed or incomplete',
-      });
-      return
-    }
+    //now publish the job to redis
+    console.log('follow up job published...........');
+    await redisPublisher.publish('tasks', JSON.stringify(jobData));
 
   } catch (error) {
     console.error('handleFollowUpPrompt error:', error);
@@ -259,5 +255,63 @@ export const handleFollowUpPrompt = async (req: Request, res: Response) => {
       message: 'Internal server error',
     });
     return
+  }
+};
+
+// --- Get Job Status ---
+export const handleJobStatus = async (req: Request, res: Response) => {
+  try {
+    const { jobId } = req.params;
+
+    if (!jobId) {
+      res.status(400).json({
+        success: false,
+        message: 'Missing jobId',
+      });
+      return;
+    }
+
+    const job = await prisma.job.findFirst({
+      where: {
+        id: jobId,
+      },
+      
+    });
+
+    if (!job) {
+      res.status(404).json({
+        success: false,
+        message: 'Job not found',
+      });
+      return;
+    }
+
+    if(job.status === 'pending'){ 
+      res.json({
+        success: false,
+        message: 'job pending',
+        data: {
+          status: job.status
+        }
+      });
+      return;
+    }
+
+    //send res with job status and genUrl
+    res.json({
+      success: true,
+      data: {
+        status: job.status,
+        genUrl: job.genUrl,
+      }
+    });
+    return
+  } catch (error) {
+    console.error('handleJobStatus error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+    });
+    return;
   }
 };

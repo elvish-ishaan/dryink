@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { prisma } from "../client/prismaClient";
+import prisma from "../client/prismaClient";
 
 // Get all sessions for a user
 export const getUserSessions = async (req: Request, res: Response): Promise<void> => {

@@ -20,6 +20,20 @@ interface ChatSession {
   }[];
 }
 
+// Fake data
+// const fakeChatSessions: ChatSession[] = Array.from({ length: 20 }).map((_, i) => ({
+//   id: `${i + 1}`,
+//   date: `2023-03-${(i + 1).toString().padStart(2, "0")}`,
+//   chats: [
+//     {
+//       id: `${i + 1}`,
+//       prompt: `What is the capital of Country #${i + 1}?`,
+//       responce: `Capital #${i + 1}`,
+//       genUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+//     },
+//   ],
+// }));
+
 const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL;
 
 export default function Sidebar() {
@@ -53,27 +67,13 @@ export default function Sidebar() {
     }
   }, [session?.user?.accessToken]);
 
-  const handleDeleteSession = async (sessionId: string, e: React.MouseEvent) => {
+  const handleDeleteSession = (sessionId: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    try {
-      const response = await fetch(`${BACKEND_BASE_URL}/sessions/${sessionId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${session?.user?.accessToken}`,
-        },
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setChatSessions(prev => prev.filter(s => s.id !== sessionId));
-        toast.success("Session deleted successfully");
-      }
-    } catch (error) {
-      console.error("Failed to delete session:", error);
-      toast.error("Failed to delete session");
-    }
+    // Remove from fake data
+    setChatSessions(prev => prev.filter(s => s.id !== sessionId));
+    toast.success("Session deleted successfully");
   };
 
   const handleSignOut = async () => {
@@ -82,9 +82,9 @@ export default function Sidebar() {
 
   return (
     <aside className="h-full bg-neutral-800 border-r border-neutral-800 flex flex-col md:min-w-64">
-
+      
       {/* Sessions */}
-      <div className="flex-1  overflow-y-auto p-4 space-y-2">
+      <div className="flex-1 overflow-y-auto p-4 space-y-2">
         <h3 className="text-sm font-semibold text-neutral-300">Sessions</h3>
         {loading ? (
           <div className="flex items-center justify-center h-full">
@@ -139,12 +139,12 @@ export default function Sidebar() {
       </div>
 
       {/* Sign Out */}
-      <div className="p-2 border-t border-neutral-800 ">
+      <div className="p-2 border-t border-neutral-800">
         <Button
           className="w-full justify-start text-neutral-200 border border-neutral-700 bg-neutral-800 hover:bg-neutral-800"
           onClick={handleSignOut}
         >
-          <LogOut className="h-4 w-4 mr-2" /> 
+          <LogOut className="h-4 w-4 mr-2" />
           Sign Out
         </Button>
       </div>
