@@ -24,7 +24,6 @@ const AudioRecorder = ({setStartVideo, previewAudioStart}: AudioRecorderProps) =
       const chunks: Blob[] = [];
 
       recorder.ondataavailable = (event: BlobEvent) => {
-        console.log(event,'getting event from media recorder')
         chunks.push(event.data);
       };
       //when the recording done

@@ -45,7 +45,6 @@ export const authOptions: NextAuthOptions = {
                         email,
                         password,
                     });
-                    console.log(res,'geeting res from login')
                     if (!res.data?.success) {
                         throw new Error(res.data?.message);
                     }
@@ -122,7 +121,6 @@ export const authOptions: NextAuthOptions = {
             return true;
         },
         async session({ session, token }): Promise<Session> {
-            console.log(token,'getting token in session')
             if (session?.user && token.email) {
                // Expose custom token to frontend
                session.user.id = token.id;

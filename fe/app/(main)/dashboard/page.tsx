@@ -24,7 +24,6 @@ const Page = () => {
     currentIndex: -1,
   });
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
   
   // Use ref to store interval ID
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -45,10 +44,14 @@ const Page = () => {
     // Clear any existing interval
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
+
+    console.log(`Starting polling for job: ${jobId}`);
 
     intervalRef.current = setInterval(async () => {
       try {
+        console.log(`Polling job: ${jobId}`);
         const res = await axios.get(`${BACKEND_BASE_URL}/prompt/${jobId}`, {
           headers: { 
             'Content-Type': 'application/json',
@@ -56,43 +59,58 @@ const Page = () => {
           },
         });
 
-        console.log(res, 'getting res from backend');
+        console.log('Polling response.....................:', res.data.data);
         
         if (!res.data.success) {
+          console.log('Polling response not successful, continuing...');
           return;
         }
-
-        const data = res.data;
-        console.log(data, 'getting data from backend');
         
-        if (data.jobStatus === 'completed') {
-          // Stop polling
+        if (res.data.data?.status === "completed") {
+          console.log('Job completed! Stopping polling...');
+          
+          // IMPORTANT: Stop polling first
           if (intervalRef.current) {
             clearInterval(intervalRef.current);
             intervalRef.current = null;
           }
           
           setLoading(false);
-          toast.success('Video generation completed');
-          setCurrentVideoUrl(data.genUrl);
           
-          // Update video history with the completed video
-          setVideoHistory(prev => {
-            const newUrls = [...prev.urls];
-            if (newUrls.length > 0) {
-              newUrls[newUrls.length - 1] = {
-                ...newUrls[newUrls.length - 1],
-                url: data.genUrl
-              };
-            }
-            return {
-              ...prev,
-              urls: newUrls
-            };
-          });
+          // Update current states
+          setCurrentVideoUrl(res.data.data?.genUrl);
+          // setCurrentResponse(res.data.data?.genRes || res.data.data?.response || '');
+          
+         // Update video history with the completed video
+          // setVideoHistory(prev => {
+          //   const newUrls = [...prev.urls];
+          //   if (newUrls.length > 0 && prev.currentIndex >= 0) {
+          //     newUrls[prev.currentIndex] = {
+          //       url: res.data?.genUrl || '',
+          //       prompt: newUrls[prev.currentIndex].prompt,
+          //     };
+          //   }
+          //   return {
+          //     ...prev,
+          //     urls: newUrls
+          //   };
+          // });
+          
+        } else if (res.data.data.status === 'failed') {
+          console.log('Job failed! Stopping polling...');
+          
+          // Stop polling on failure
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
+          
+          setLoading(false);
+          toast.error('Video generation failed');
         }
       } catch (error) {
         console.error('Polling error:', error);
+        // Don't stop polling on network errors, might be temporary
       }
     }, 3000);
   };
@@ -100,6 +118,7 @@ const Page = () => {
   // Function to stop polling
   const stopPolling = () => {
     if (intervalRef.current) {
+      console.log('Manually stopping polling...');
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
@@ -110,6 +129,7 @@ const Page = () => {
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
     };
   }, []);
@@ -138,9 +158,6 @@ const Page = () => {
             prompt,
             ...params
           };
-          
-      console.log(body, 'sending body to backend');
-      
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 
@@ -148,11 +165,10 @@ const Page = () => {
           "Authorization": `Bearer ${session?.user?.accessToken}`
         },
         body: JSON.stringify(body),
-      });
+      });      
       
       const data = await response.json();
-      console.log(data, 'getting data from backend');
-
+      
       if (!data.success) {
         toast.error(data.message);
         setLoading(false);
@@ -161,27 +177,25 @@ const Page = () => {
 
       // Set session ID if this is the first prompt
       if (data.data?.chatSessionId) {
-        setSessionId(data.data.chatSessionId);
+        setSessionId(data.data?.chatSessionId);
       }
 
-      // Set current job ID
+      // Set current job ID and start polling
       if (data.data?.jobId) {
-        setCurrentJobId(data.data.jobId);
-        // Start polling for this job
         startPolling(data.data.jobId);
       }
 
-      // Set current prompt and response immediately
-      setCurrentPrompt(prompt);
-      setCurrentResponse(''); // Will be updated when polling completes
+      // Set current prompt and clear previous data
+      setCurrentPrompt(data.data?.prompt || prompt);
+      setCurrentResponse(data.data?.genRes || ''); // Will be updated when polling completes
       setCurrentVideoUrl(null); // Will be updated when polling completes
       setIsFollowUp(true);
 
       // Add to history (video URL will be updated when polling completes)
       const newHistoryItem = {
-        url: '', // Will be updated when video is ready
-        prompt: prompt,
-        genRes: '' // Will be updated when polling completes
+        url: data.data?.genUrl || '', // Will be updated when video is ready
+        prompt: data.data?.prompt || prompt,
+        genRes: data.data?.genRes || '' // Will be updated when polling completes
       };
 
       setVideoHistory(prev => {
@@ -194,13 +208,14 @@ const Page = () => {
       });
 
       return {
-        videoUrl: '',
-        genRes: '',
-        prompt: prompt
+        status: data.data?.status || '',
+        videoUrl: data.data?.genUrl || '',
+        genRes: data.data?.genRes || '',
+        prompt: data.data?.prompt || prompt
       };
 
     } catch (err) {
-      console.error(err);
+      console.error('Submit error:', err);
       toast.error('Failed to generate video');
       setLoading(false);
     }
@@ -211,6 +226,10 @@ const Page = () => {
       toast("No more history to undo");
       return;
     }
+    
+    // Stop current polling when navigating history
+    stopPolling();
+    setLoading(false);
     
     const newIndex = videoHistory.currentIndex - 1;
     const historyItem = videoHistory.urls[newIndex];
@@ -230,6 +249,10 @@ const Page = () => {
       toast("No more history to redo");
       return;
     }
+    
+    // Stop current polling when navigating history
+    stopPolling();
+    setLoading(false);
     
     const newIndex = videoHistory.currentIndex + 1;
     const historyItem = videoHistory.urls[newIndex];
