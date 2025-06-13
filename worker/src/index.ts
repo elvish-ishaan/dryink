@@ -63,7 +63,7 @@ async function startWorker() {
             console.log('error in deleting folder')
           }
           //update the job status to completed in db
-          const updatedJob = await prisma.job.update({
+            await prisma.job.update({
             where: {
               id: jobData.jobId,
             },
@@ -85,6 +85,7 @@ async function startWorker() {
         });
       } catch (error) {
         console.error('Error processing task:', error);
+        throw new Error('Error processing task');
       }
 }
 

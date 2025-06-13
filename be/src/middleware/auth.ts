@@ -2,7 +2,6 @@ import { NextFunction, Request, Response } from "express";
 import jwt from 'jsonwebtoken'
 
 export const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
-  console.log(req.headers.authorization,'getting auth header')
   const token = req.headers.authorization;
 
   if (!token) {
@@ -16,7 +15,6 @@ export const isAuthenticated = (req: Request, res: Response, next: NextFunction)
   const tokenParts = token.split(" ");
 
   if (tokenParts.length !== 2 || tokenParts[0] !== "Bearer") {
-      console.log(' token not found ')
      res.status(401).json({
       success: false,
       message: "Invalid token",

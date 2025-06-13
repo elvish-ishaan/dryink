@@ -25,7 +25,6 @@ interface JobData {
 
 // --- Main Prompt Handler ---
 export const handlePrompt = async (req: Request, res: Response) => {
-  console.log(req.user,'getting user from req')
   try {
     const { prompt, height, width, fps, frameCount } = req.body;
 
@@ -85,7 +84,6 @@ export const handlePrompt = async (req: Request, res: Response) => {
           }
         }
       });
-      console.log('init user', user)
       if(!user){
         res.status(401).json({
           success: false,
@@ -100,7 +98,6 @@ export const handlePrompt = async (req: Request, res: Response) => {
           userId: user?.id,
         },
       });
-      console.log('created chat session', chatSession)
 
       //create a new chat
       chat = await prisma.chat.create({
@@ -111,7 +108,6 @@ export const handlePrompt = async (req: Request, res: Response) => {
         },
       });
     
-      console.log('created chat', chat)
     } catch (error) {
       console.log(error,'getting error in database operation in handlePrompt')
     }
@@ -172,7 +168,6 @@ export const handlePrompt = async (req: Request, res: Response) => {
 
 // --- Follow-up Prompt Handler ---
 export const handleFollowUpPrompt = async (req: Request, res: Response) => {
-  console.log(req.body,'this is req body is follow up controller')
   try {
     const { followUprompt, previousGenRes, height, width, fps, frameCount, chatSessionId } = req.body;
 
@@ -226,7 +221,7 @@ export const handleFollowUpPrompt = async (req: Request, res: Response) => {
       return
     }
 
-    //return jobid to user immediately
+    // //return jobid to user immediately
     res.json({
       success: true,
       data: {
@@ -237,6 +232,7 @@ export const handleFollowUpPrompt = async (req: Request, res: Response) => {
       },
     });
 
+    //init job
     const jobData: JobData = {
       jobId: job.id,
       chatId: chat?.id,
