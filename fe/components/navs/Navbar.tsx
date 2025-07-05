@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import logo from '@/assets/logo.svg'
+import { useSession } from "next-auth/react";
 
 export default function Navbar() {
   const navItems = [
@@ -18,6 +19,8 @@ export default function Navbar() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const router = useRouter();
+  const { data: session, status} = useSession();
+  console.log(session, status);
 
   useEffect(() => {
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -85,20 +88,35 @@ export default function Navbar() {
             </Button>
 
             <motion.div layoutId="signin" className="flex gap-2">
-              <Button
+              {
+                status === 'authenticated' ? <Button
+                  onClick={() => router.push("/dashboard")}
+                  variant={"outline"}
+                  className="rounded-2xl text-neutral-800 dark:text-white cursor-pointer"
+                >
+                  Dashboard </Button> : 
+                  <>
+                    <Button
                 onClick={() => router.push("/login")}
                 variant="outline"
                 className="rounded-2xl text-neutral-800 dark:text-white cursor-pointer"
               >
                 Login
-              </Button>
-              <Button
+                    </Button>
+                    <Button
                 onClick={() => router.push("/signup")}
                 variant="outline"
                 className="rounded-2xl text-neutral-800 dark:text-white cursor-pointer"
               >
                 Sign Up
-              </Button>
+                    </Button>
+                  </>
+                
+              }
+              { status === 'loading' && <Button
+                variant="outline"
+                className="rounded-2xl text-neutral-800 dark:text-white cursor-pointer"
+              >Loading...</Button>}
             </motion.div>
           </div>
         </div>
