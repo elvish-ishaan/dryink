@@ -133,7 +133,7 @@ export default function Sidebar() {
             >
               <div className="flex-1 min-w-0">
                 <p className="text-sm truncate">
-                  {session.chats[0]?.prompt || "New Session"}
+                  {session.chats[0]?.prompt.slice(0, 20)+ "..."}
                 </p>
                 
               </div>
@@ -169,9 +169,9 @@ export default function Sidebar() {
       </div>
 
       {/* Sign Out */}
-      <div className="p-2 border-t border-neutral-800">
+      <div className="p-2 flex justify-center border-t border-neutral-800">
         <Button
-          className="w-full justify-start text-neutral-200 border border-neutral-700 bg-neutral-800 hover:bg-neutral-900"
+          className=" w-full  text-neutral-200 border border-neutral-700 bg-neutral-800 hover:bg-neutral-900"
           onClick={handleSignOut}
         >
           <LogOut className="h-4 w-4 mr-2" />

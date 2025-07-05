@@ -75,7 +75,7 @@ export default function PromptCard({ onSubmit }: PromptCardProps) {
   };
 
   return (
-    <Card className="flex flex-col h-full bg-neutral-800 rounded-none overflow-hidden">
+    <Card className="flex flex-col !pb-0 h-full bg-neutral-800 rounded-none overflow-hidden">
       <CardHeader className="shrink-0">
         <CardTitle>Prompt History
           {/* Prompt Guidance */}

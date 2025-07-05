@@ -1,6 +1,6 @@
 import { createClient} from 'redis'
 
-const REDIS_URL = "rediss://default:AXv3AAIjcDE1Y2RhYzU0NGMxMTc0ZTMzYjRlNjZlMGFkYmZhZWM0MnAxMA@settling-mammal-31735.upstash.io:6379"
+const REDIS_URL = "rediss://default:AcgVAAIjcDE0YmI3MTE0YmEyNTk0NGE4YWFmODIxMDExMDczMjJlY3AxMA@amazing-piranha-51221.upstash.io:6379";
 export const redisSubscriber = createClient({   
     url: REDIS_URL,
 });
