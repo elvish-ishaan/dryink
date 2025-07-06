@@ -1,7 +1,8 @@
 import Redis from 'ioredis';
 import { createClient } from 'redis';
 
-const REDIS_URL = "rediss://default:AcgVAAIjcDE0YmI3MTE0YmEyNTk0NGE4YWFmODIxMDExMDczMjJlY3AxMA@amazing-piranha-51221.upstash.io:6379";
+//for dev use local host
+const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 export const redisPublisher = createClient({
     url:  REDIS_URL,
 });
