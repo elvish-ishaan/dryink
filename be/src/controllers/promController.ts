@@ -1,10 +1,13 @@
 import { Request, Response } from "express";
-import { Chats, GoogleGenAI } from "@google/genai";
 import { modifySketchSystemPrompt, newSystemPrompt, systemPrompt, userPromptEnhancerSystemPrompt } from "../lib/prompts";
 import { redisPublisher } from "../configs/redisConfig";
 import { v4 as uuidv4 } from 'uuid';
 import { getS3SignedUrl } from "../lib/utils";
 import prisma from "../client/prismaClient";
+import { generateText } from 'ai';
+import { openai } from "@ai-sdk/openai";
+
+
 
 enum JobStatus {
     PENDING = "pending",
@@ -38,15 +41,12 @@ export const handlePrompt = async (req: Request, res: Response) => {
 
     console.log('generating main response from code gen model............')
     const startTime = Date.now();
-    const ai = new GoogleGenAI({ apiKey: process.env.LLM_API_KEY });
-    const response = await ai.models.generateContent({
-      model: process.env.LLM_MODEL as string,
-      contents: prompt as string,
-      config: {
-        temperature: 0.3,
-        systemInstruction: newSystemPrompt,
-      },
-    });
+    const response = await generateText({
+      model: openai(process.env.LLM_MODEL!),
+      prompt: prompt,
+      system: newSystemPrompt,
+      temperature: 0.3
+    })
     const endTime = Date.now();
     console.log('time taken:', endTime - startTime)
     console.log('response generated........')
@@ -179,14 +179,18 @@ export const handleFollowUpPrompt = async (req: Request, res: Response) => {
       return
     }
 
-    const ai = new GoogleGenAI({ apiKey: process.env.LLM_API_KEY });
-    const response = await ai.models.generateContent({
-      model: process.env.LLM_MODEL as string,
-      contents: modifySketchSystemPrompt + followUprompt + previousGenRes as string,
-      config: {
-        systemInstruction: newSystemPrompt, 
-      },
-    });
+    // const response = await ai.models.generateContent({
+    //   model: process.env.LLM_MODEL as string,
+    //   contents: modifySketchSystemPrompt + followUprompt + previousGenRes as string,
+    //   config: {
+    //     systemInstruction: newSystemPrompt, 
+    //   },
+    // });
+    const response = await generateText({
+      model: openai(process.env.LLM_MODEL!),
+      prompt: modifySketchSystemPrompt + followUprompt + previousGenRes,
+      system: newSystemPrompt
+    })
 
     //init a job for user
     const job = await prisma.job.create({
