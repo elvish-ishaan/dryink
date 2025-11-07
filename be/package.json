@@ -37,6 +37,7 @@
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
+    "@types/dotenv": "^6.1.1",
     "@types/node": "^22.15.26",
     "esbuild": "0.25.4",
     "nodemon": "^3.1.10",
