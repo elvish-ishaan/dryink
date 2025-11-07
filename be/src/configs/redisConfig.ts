@@ -1,8 +1,7 @@
-import Redis from 'ioredis';
 import { createClient } from 'redis';
 
 //for dev use local host
-const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+const REDIS_URL = process.env.REDIS_URL! || 'redis://localhost:6379';
 export const redisPublisher = createClient({
     url:  REDIS_URL,
 });
