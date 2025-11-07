@@ -1,13 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { LogOut, Trash2 } from "lucide-react";
+import { LogOut, Plus, Trash2 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { AvatarFallback, AvatarImage, Avatar } from "../ui/avatar";
 import { Button } from "../ui/button";
 import { toast } from "sonner";
 import DashLoader from "../loaders/DashLoader";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+} from "../ui/dialog";
+import { useRouter } from "next/navigation";
 
 interface ChatSession {
   id: string;
@@ -20,26 +30,15 @@ interface ChatSession {
   }[];
 }
 
-// Fake data
-// const fakeChatSessions: ChatSession[] = Array.from({ length: 20 }).map((_, i) => ({
-//   id: `${i + 1}`,
-//   date: `2023-03-${(i + 1).toString().padStart(2, "0")}`,
-//   chats: [
-//     {
-//       id: `${i + 1}`,
-//       prompt: `What is the capital of Country #${i + 1}?`,
-//       responce: `Capital #${i + 1}`,
-//       genUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-//     },
-//   ],
-// }));
-
 const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL;
 
 export default function Sidebar() {
   const { data: session } = useSession();
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchSessions = async () => {
@@ -67,13 +66,22 @@ export default function Sidebar() {
     }
   }, [session?.user?.accessToken]);
 
-  const handleDeleteSession = (sessionId: string, e: React.MouseEvent) => {
+  // Update delete handler to open dialog
+  const handleDeleteSessionClick = (sessionId: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    setSessionToDelete(sessionId);
+    setShowDeleteDialog(true);
+  };
 
-    // Remove from fake data
-    setChatSessions(prev => prev.filter(s => s.id !== sessionId));
-    toast.success("Session deleted successfully");
+  // Confirm delete
+  const handleConfirmDelete = () => {
+    if (sessionToDelete) {
+      setChatSessions(prev => prev.filter(s => s.id !== sessionToDelete));
+      toast.success("Session deleted successfully");
+      setSessionToDelete(null);
+      setShowDeleteDialog(false);
+    }
   };
 
   const handleSignOut = async () => {
@@ -82,10 +90,34 @@ export default function Sidebar() {
 
   return (
     <aside className="h-full bg-neutral-800 border-r border-neutral-800 flex flex-col md:min-w-64">
-      
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className=" bg-neutral-800">
+          <DialogHeader>
+            <DialogTitle>Delete Session?</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this session? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+            >
+              Delete
+            </Button>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {/* Sessions */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-2">
-        <h3 className="text-sm font-semibold text-neutral-300">Sessions</h3>
+      <div className="flex-1 w-[10] overflow-y-auto p-4 space-y-2">
+        <h3 className="text-sm font-semibold p-2 text-neutral-300">Sessions</h3>
+        <Button className=" w-full"
+        onClick={() => router.push("/dashboard")}
+        ><span><Plus className=" text-black font-bold"/></span>New Chat</Button>
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="scale-75">
@@ -97,23 +129,21 @@ export default function Sidebar() {
             <Link
               key={session.id}
               href={`/dashboard/${session.id}`}
-              className="flex items-center justify-between p-2 rounded-md bg-neutral-700 hover:bg-neutral-600 transition-colors"
+              className="flex items-center justify-between px-2 py-1 max-w-full rounded-md bg-neutral-700 hover:bg-neutral-600 transition-colors"
             >
               <div className="flex-1 min-w-0">
                 <p className="text-sm truncate">
-                  {session.chats[0]?.prompt || "New Session"}
+                  {session.chats[0]?.prompt.slice(0, 20)+ "..."}
                 </p>
-                <p className="text-xs text-neutral-400">
-                  {new Date(session.date).toLocaleDateString()}
-                </p>
+                
               </div>
               <Button
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7"
-                onClick={(e) => handleDeleteSession(session.id, e)}
+                onClick={(e) => handleDeleteSessionClick(session.id, e)}
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className=" text-red-400 h-4 w-4" />
               </Button>
             </Link>
           ))
@@ -139,9 +169,9 @@ export default function Sidebar() {
       </div>
 
       {/* Sign Out */}
-      <div className="p-2 border-t border-neutral-800">
+      <div className="p-2 flex justify-center border-t border-neutral-800">
         <Button
-          className="w-full justify-start text-neutral-200 border border-neutral-700 bg-neutral-800 hover:bg-neutral-800"
+          className=" w-full  text-neutral-200 border border-neutral-700 bg-neutral-800 hover:bg-neutral-900"
           onClick={handleSignOut}
         >
           <LogOut className="h-4 w-4 mr-2" />

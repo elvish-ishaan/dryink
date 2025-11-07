@@ -28,17 +28,6 @@ const Page = () => {
   // Use ref to store interval ID
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    const handleResize = () => {
-      const vh = window.innerHeight;
-      document.documentElement.style.setProperty('--app-height', `${vh}px`);
-    };
-    
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
   // Function to start polling
   const startPolling = (jobId: string) => {
     // Clear any existing interval

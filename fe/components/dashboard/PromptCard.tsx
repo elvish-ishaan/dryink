@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { PromptItem } from "@/types/types";
 import { useState } from "react";
+import ToolTiper from "./ToolTiper";
 
 interface PromptCardProps {
   onSubmit: (
@@ -74,9 +75,16 @@ export default function PromptCard({ onSubmit }: PromptCardProps) {
   };
 
   return (
-    <Card className="flex flex-col h-full bg-neutral-800 rounded-none overflow-hidden">
+    <Card className="flex flex-col !pb-0 h-full bg-neutral-800 rounded-none overflow-hidden">
       <CardHeader className="shrink-0">
-        <CardTitle>Prompt History</CardTitle>
+        <CardTitle>Prompt History
+          {/* Prompt Guidance */}
+          <ToolTiper  trigger="💡">
+            <div className="text-xs">
+              Add a clear and descriptive prompt to get the best results.
+            </div>
+          </ToolTiper>
+        </CardTitle>
       </CardHeader>
 
       <CardContent className="flex flex-col h-full px-2 pb-2 overflow-hidden">

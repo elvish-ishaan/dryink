@@ -57,6 +57,10 @@ export default function InputCard({ onSubmit }: InputCardProps) {
         frameCount: ''
       });
 
+    // New state for quality and model
+    const [quality, setQuality] = useState<'standard' | 'high' | 'low'>('standard');
+    const [model, setModel] = useState<'gemini' | 'openai' | 'claude'>('gemini');
+
     const validateInputs = () => {
         const newErrors: ErrorState = {
             prompt: '',
@@ -92,11 +96,14 @@ export default function InputCard({ onSubmit }: InputCardProps) {
 
         setLoading(true);
         try {
+            // Pass quality and model if needed
             await onSubmit(prompt, {
                 width,
                 height,
                 fps,
-                frameCount
+                frameCount,
+                // quality,
+                // model,
             });
             setPrompt('');
         } catch (error) {
@@ -108,11 +115,6 @@ export default function InputCard({ onSubmit }: InputCardProps) {
 
     return (
         <div className="space-y-4 mt-3">
-          {/* Prompt Guidance */}
-          <div className="text-sm text-yellow-400 bg-yellow-900/20 border border-yellow-700 rounded-md px-4 py-2">
-            💡 Add a clear and descriptive prompt to get the best results.
-          </div>
-      
           <AnimatedPromptInput 
             prompt={prompt}
             setPrompt={setPrompt}
@@ -225,6 +227,36 @@ export default function InputCard({ onSubmit }: InputCardProps) {
               <div className="text-xs text-neutral-300">
                 Frame Count ({MIN_FRAMES}-{MAX_FRAMES})
               </div>
+            </div>
+
+            {/* Quality Select */}
+            <div className="space-y-1">
+              <Select value={quality} onValueChange={(value) => setQuality(value as 'standard' | 'high' | 'low')}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Quality" />
+                </SelectTrigger>
+                <SelectContent className="bg-neutral-800">
+                  <SelectItem className="hover:bg-neutral-700" value="standard">Standard</SelectItem>
+                  <SelectItem className="hover:bg-neutral-700" value="high">High Quality</SelectItem>
+                  <SelectItem className="hover:bg-neutral-700" value="low">Low Quality</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="text-xs text-neutral-300">Quality</div>
+            </div>
+
+            {/* Model Select */}
+            <div className="space-y-1">
+              <Select value={model} onValueChange={(value) => setModel(value as 'gemini' | 'openai' | 'claude')}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Model" />
+                </SelectTrigger>
+                <SelectContent className="bg-neutral-800">
+                  <SelectItem className="hover:bg-neutral-700" value="gemini">Gemini</SelectItem>
+                  <SelectItem className="hover:bg-neutral-700" value="openai">OpenAI</SelectItem>
+                  <SelectItem className="hover:bg-neutral-700" value="claude">Claude</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="text-xs text-neutral-300">Model</div>
             </div>
           </div>
       
