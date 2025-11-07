@@ -1,9 +1,11 @@
-import Redis from "ioredis"
 import dotenv from 'dotenv';
+import { createClient } from "redis";
 dotenv.config();
 
 const REDIS_URL = process.env.REDIS_URL! || 'redis://localhost:6379';
-export const redisSubscriber = new Redis(REDIS_URL!);
+export const redisSubscriber = createClient({
+  url: REDIS_URL!
+});
 
 async function connectRedis() {
     redisSubscriber.on('error', err => console.log('Redis Client Error', err));
