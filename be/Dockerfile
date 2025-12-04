@@ -1,21 +1,25 @@
-FROM node:20-alpine
+FROM node:20-slim
 
 WORKDIR /app
 
-#copy the package.json file and install the dependencies of be
-COPY package*.json ./
+# Copy backend package files
+COPY be/package*.json ./
 
-
+# Install dependencies
 RUN npm install
 
-#now copy the db folder and install the dependencies of db
-RUN cd ../db
-RUN npm install 
+# Copy backend source.
+COPY be .
 
-COPY . ./db
+# Copy Prisma schema & migrations from /db into backend prisma folder
+COPY db/prisma ./prisma
 
-COPY . .
+# Generate Prisma client inside the container...
+RUN npx prisma generate
+
+# Build worker
+RUN npm run build
 
 EXPOSE 8080
 
-CMD ["npm","run", "start"]
+CMD ["npm", "run", "start"]

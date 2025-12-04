@@ -1,28 +1,25 @@
-FROM node:20-alpine
+FROM node:20-slim
 
 WORKDIR /app
 
-#get all the env variables like aws, db, redis, etc
-ARG AWS_ACCESS_KEY_ID
-ARG AWS_SECRET_ACCESS_KEY
-ARG AWS_REGION
-ARG AWS_S3_BUCKET
-ARG REDIS_URL
+# Copy worker package files.
+COPY worker/package*.json ./ 
 
-ENV AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
-ENV AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
-ENV AWS_REGION=$AWS_REGION
-ENV AWS_S3_BUCKET=$AWS_S3_BUCKET
-ENV REDIS_URL=$REDIS_URL
-
-COPY package*.json ./
-
+# Install dependencies
 RUN npm install
+
+# Copy worker source
+COPY worker .
+
+# Copy Prisma schema from shared db folder....
+COPY db/prisma ./prisma
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# Build worker
 RUN npm run build
 
-COPY . .
-
-EXPOSE 5001
+EXPOSE 8081
 
 CMD ["npm","run", "start"]
-
