@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getS3SignedUrl } from "../lib/utils";
 import prisma from "../client/prismaClient";
 import { generateText } from 'ai';
-import { openai } from "@ai-sdk/openai";
+import { google } from "@ai-sdk/google";
 
 
 
@@ -42,7 +42,7 @@ export const handlePrompt = async (req: Request, res: Response) => {
     console.log('generating main response from code gen model............')
     const startTime = Date.now();
     const response = await generateText({
-      model: openai(process.env.LLM_MODEL!),
+      model: google(process.env.LLM_MODEL!),
       prompt: prompt,
       system: newSystemPrompt,
       temperature: 0.3
@@ -187,7 +187,7 @@ export const handleFollowUpPrompt = async (req: Request, res: Response) => {
     //   },
     // });
     const response = await generateText({
-      model: openai(process.env.LLM_MODEL!),
+      model: google(process.env.LLM_MODEL!),
       prompt: modifySketchSystemPrompt + followUprompt + previousGenRes,
       system: newSystemPrompt
     })

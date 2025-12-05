@@ -2,9 +2,7 @@
 
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
-// import Image from "next/image";
 import { Brain, Download, Edit3, Type} from 'lucide-react';
-
 
 
 const sections = [
@@ -12,28 +10,28 @@ const sections = [
     title: "1. Enter Your Prompt",
     text: "Start by describing the video you envision. Be as detailed as possible to guide the AI.",
     subText: "Tell the AI your story idea, characters, setting, and desired mood.",
-    video: "/Typing.mp4", 
+    video: "https://dotformer-gen-bucket.s3.ap-south-1.amazonaws.com/Typing.mp4", 
     icon: <Type size={24} />,
   },
   {
     title: "2. AI Generates Your Video",
     text: "Our intelligent AI takes your prompt and transforms it into a unique video.",
     subText: "Sit back and watch as the AI brings your vision to life, frame by frame.",
-    video: "Video.mp4", 
+    video: "https://dotformer-gen-bucket.s3.ap-south-1.amazonaws.com/Video.mp4", 
     icon: <Brain size={24} />,
   },
   {
     title: "3. Download Your Creation",
     text: "Once complete, your video is ready for download in high quality.",
     subText: "Get your masterpiece in a format that's perfect for sharing.",
-    video: "download.mp4", 
+    video: "https://dotformer-gen-bucket.s3.ap-south-1.amazonaws.com/download.mp4", 
     icon: <Download size={24} />,
   },
   {
     title: "4. Refine with Follow-up Prompts",
     text: "Need tweaks? Provide additional prompts to fine-tune your video.",
     subText: "Iterate and perfect your creation until it's exactly what you imagined.",
-    video: "man.mp4",
+    video: "https://dotformer-gen-bucket.s3.ap-south-1.amazonaws.com/man.mp4",
     icon: <Edit3 size={24} />,
   },
 ];
@@ -109,7 +107,7 @@ export default function Featured() {
                     {/* Video */}
                     <motion.div
                       initial={{ opacity: 0, x: 50 }}
-                      whileInView={{ opacity: 1, x: 0 }}
+                      whileInView={{ opacity: 1, x: 50 }}
                       transition={{ duration: 0.6 }}
                       className="flex justify-center"
                     >

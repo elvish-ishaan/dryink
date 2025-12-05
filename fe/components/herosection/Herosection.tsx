@@ -45,38 +45,6 @@ const HeroSection = () => {
 }, [animate]);
 
 
-  // const startAnimating = async () => {
-  //   await animate(
-  //     ".animate",
-  //     {
-  //       opacity: 1,
-  //       filter: "blur(0px)",
-  //       y: 0,
-  //     },
-  //     {
-  //       duration: 0.4,
-  //       ease: "easeInOut",
-  //       delay: stagger(0.2),
-  //     }
-  //   );
-
-  //   // Animate both button and NotBacked together
-  //   animate(
-  //     ".animate-button",
-  //     {
-  //       opacity: 1,
-  //       filter: "blur(0px)",
-  //       y: 0,
-  //       scale: [0.8 , 1 ],
-  //     },
-  //     {
-  //       type: "spring",
-  //       stiffness: 300,
-  //       damping: 20,
-  //     }
-  //   );
-  // };
-
   return (
     <section
       ref={scope}
@@ -85,10 +53,14 @@ const HeroSection = () => {
     >
       {/* Purple Background Glow */}
       <div className="absolute inset-0 flex items-center justify-center z-0 pointer-events-none">
-        <div className="w-[450px] h-[450px] bg-[#4a3294] rounded-full blur-[60px] opacity-90 mb-20 hidden dark:block" />
+        <div className="w-[550px] h-[550px] bg-[#4a3294] rounded-full blur-[60px] opacity-90 mb-20 hidden dark:block" />
       </div>
 
       <div className="max-w-4xl text-center relative z-10 mt-10">
+        <NotBacked
+            className="animate-button "
+            style={{ opacity: 0, filter: "blur(4px)", transform: "translateY(20px) " }}
+          />
         {/* Animated Text */}
         <p
           className="animate text-sm tracking-widest text-purple-700 dark:text-white uppercase mb-4"
@@ -103,7 +75,7 @@ const HeroSection = () => {
           Where Ideas Turn into Animated Lessons
         </h1>
         <p
-          className="animate max-w-xl mx-auto mb-8 mt-12 text-violet-600 dark:text-violet-400"
+          className="animate max-w-xl mx-auto mb-8 mt-10 text-violet-600 dark:text-violet-400"
           style={{ opacity: 0, filter: "blur(4px)", transform: "translateY(20px)" }}
         >
           Easily turn lessons into engaging, animated videos. Dryink helps you simplify complex ideas through dynamic visuals — no animation skills needed.
@@ -124,10 +96,6 @@ const HeroSection = () => {
             Get started
           </Button>
 
-          <NotBacked
-            className="animate-button "
-            style={{ opacity: 0, filter: "blur(4px)", transform: "translateY(20px) " }}
-          />
         </div>
       </div>
     </section>

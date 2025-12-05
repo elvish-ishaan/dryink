@@ -4,15 +4,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { signIn } from "next-auth/react";
 import axios from "axios";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import githubLogo from '@/public/github.svg'
 import logo from '@/assets/logo.svg'
-import googleLogo from '@/assets/google.png'
-import Avatar, { genConfig } from 'react-nice-avatar'
+import { Chrome, Github } from "lucide-react";
 
 
 
@@ -24,7 +22,7 @@ export default function AuthPage({ type = "login" }) {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter()
-  const avatarConfig = useMemo(() => genConfig(), [])
+  // const avatarConfig = useMemo(() => genConfig(), [])
   
 
 
@@ -177,21 +175,16 @@ export default function AuthPage({ type = "login" }) {
             </div>
           </div>
           
-          <div className=" flex gap-2 flex-col-reverse" >
-              {/* GitHub Auth */}
+          <div className=" flex gap-2 w-fit" >
+            <div className=" w-fit gap-5 flex justify-around">
+                    {/* GitHub Auth */}
           <Button
             onClick={handleGithubLogin}
             variant="outline"
             className="w-full flex items-center justify-center cursor-pointer"
             disabled={loading}
           >
-            <Image
-              src={githubLogo}
-              alt="GitHub"
-              width={20}
-              height={20}
-              className="mr-2 dark:text-white dark:bg-white rounded-full"
-            />
+            <Github size={20}/>
             {loading ? "Loading..." : "Github"}
           </Button>
             {/* Google Auth */}
@@ -201,15 +194,10 @@ export default function AuthPage({ type = "login" }) {
               className="w-full flex items-center justify-center cursor-pointer"
               disabled={loading}
             >
-              <Image
-                src={googleLogo}
-                alt="Google"
-                width={20}
-                height={20}
-                className="mr-2 dark:text-white dark:bg-white rounded-full"
-              />
+              <Chrome size={20} />
               {loading ? "Loading..." : "Google"}
             </Button>
+            </div>
           </div>
 
           {/* Terms */}
@@ -228,22 +216,13 @@ export default function AuthPage({ type = "login" }) {
       </div>
 
       {/* Right (Info Box with dashed borders) */}
-      <div className="hidden md:flex w-1/2 items-center justify-center p-8 border-l bg-neutral-100 border-dashed dark:bg-neutral-900 border-gray-700 dark:border-neutral-900">
+      <div className="hidden md:flex w-1/2 items-center justify-center p-8 bg-gradient-to-bl from-blue-600 to-purple-600 dark:bg-neutral-900 border-gray-700 dark:border-neutral-900">
         <div className="text-center max-w-md">
-          {/* Avatar Group */}
-          <div className="flex justify-center mb-4">
-            <div className="flex -space-x-2">
-              {[1,2,3,4,5,6].map(( _, index) => {
-                 return <Avatar key={index} className=" size-12"  {...avatarConfig} />
-              })}
-            </div>
-          </div>
-
           {/* Message */}
           <h3 className="text-lg font-semibold">
             Dryink is used by thousands of users
           </h3>
-          <p className="text-sm text-muted-foreground mt-2">
+          <p className="text-sm text-foreground mt-2">
             {/* write a short description of Dryink here */}
             Forget creating videos for your students. Dryink is a powerful tool that simplifies complex ideas into engaging, animated videos.
           </p>

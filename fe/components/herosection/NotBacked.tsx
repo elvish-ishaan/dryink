@@ -8,7 +8,7 @@ const NotBacked = ({ className , style } :  { className?: string, style?: React.
           flex items-center space-x-2
           bg-neutral-200 text-neutral-800
           dark:bg-neutral-800 dark:text-neutral-200
-          px-4 py-2 rounded-full shadow-lg text-lg font-semibold
+          px-4 py-2 rounded-full shadow-lg text-sm font-semibold
           border border-neutral-200 dark:border-neutral-600
             backdrop-blur-lg
         "
