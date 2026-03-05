@@ -75,10 +75,27 @@ export default function Sidebar() {
   };
 
   // Confirm delete
-  const handleConfirmDelete = () => {
-    if (sessionToDelete) {
+  const handleConfirmDelete = async () => {
+    if (!sessionToDelete) return;
+    try {
+      const response = await fetch(`${BACKEND_BASE_URL}/sessions/${sessionToDelete}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${session?.user?.accessToken}`,
+        },
+      });
+      const data = await response.json();
+      if (!data.success) {
+        toast.error(data.message || 'Failed to delete session');
+        return;
+      }
       setChatSessions(prev => prev.filter(s => s.id !== sessionToDelete));
       toast.success("Session deleted successfully");
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Delete session error:', error);
+      toast.error('Failed to delete session');
+    } finally {
       setSessionToDelete(null);
       setShowDeleteDialog(false);
     }
