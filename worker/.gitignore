@@ -5,3 +5,6 @@
 dist
 
 node_modules
+
+
+gcp-key.json

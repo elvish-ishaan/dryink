@@ -2,7 +2,7 @@
 import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { useAnimate, stagger } from "framer-motion";
+import { useAnimate, stagger } from "motion/react";
 import NotBacked from "./NotBacked";
 
 const HeroSection = () => {

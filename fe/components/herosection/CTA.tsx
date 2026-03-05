@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { Button } from "@/components/ui/button"; // Assuming you have shadcn button
 import { ArrowRight, Sparkles } from "lucide-react";
 

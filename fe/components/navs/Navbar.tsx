@@ -3,7 +3,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Button } from "../ui/button";
 import { Sun, Moon, Menu, X } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import logo from '@/assets/logo.svg'

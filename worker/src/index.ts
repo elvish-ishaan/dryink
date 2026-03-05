@@ -1,7 +1,7 @@
 import express from "express";
 import { redisSubscriber } from "./configs/redis";
 import { generateVideo } from "./core/operation";
-import { uploadToS3 } from "./configs/s3Config";
+import { uploadToGcp } from "./configs/gcpStorage";
 import fs from 'fs'
 import path from "path";
 import prisma from "./configs/prismaclient";
@@ -42,7 +42,7 @@ async function startWorker() {
           });
           
           //upload the video to s3
-          const uploadedObjUrl = await uploadToS3(videoPath, `${jobData.jobId}.mp4`);
+          const uploadedObjUrl = await uploadToGcp(videoPath, `${jobData.jobId}.mp4`);
           if(!uploadedObjUrl){
             console.log('error in uploading to s3')
           }

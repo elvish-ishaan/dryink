@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { Textarea } from "@/components/ui/textarea"; 
 import { AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils"; 

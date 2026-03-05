@@ -2,10 +2,15 @@ import { Request, Response } from "express";
 import { modifySketchSystemPrompt, newSystemPrompt, systemPrompt, userPromptEnhancerSystemPrompt } from "../lib/prompts";
 import { redisPublisher } from "../configs/redisConfig";
 import { v4 as uuidv4 } from 'uuid';
-import { getS3SignedUrl } from "../lib/utils";
+import { getGcpSignedUrl } from "../lib/utils";
 import prisma from "../client/prismaClient";
 import { generateText } from 'ai';
-import { google } from "@ai-sdk/google";
+import { createOpenAI } from "@ai-sdk/openai";
+
+const openrouter = createOpenAI({
+  baseURL: 'https://openrouter.ai/api/v1',
+  apiKey: process.env.OPENROUTER_API_KEY!,
+});
 
 
 
@@ -29,7 +34,7 @@ interface JobData {
 // --- Main Prompt Handler ---
 export const handlePrompt = async (req: Request, res: Response) => {
   try {
-    const { prompt, height, width, fps, frameCount } = req.body;
+    const { prompt, height, width, fps, frameCount, model } = req.body;
 
     if (!prompt || !height || !width || !fps || !frameCount) {
        res.status(400).json({
@@ -42,7 +47,7 @@ export const handlePrompt = async (req: Request, res: Response) => {
     console.log('generating main response from code gen model............')
     const startTime = Date.now();
     const response = await generateText({
-      model: google(process.env.LLM_MODEL!),
+      model: openrouter(model || process.env.LLM_MODEL!),
       prompt: prompt,
       system: newSystemPrompt,
       temperature: 0.3
@@ -169,7 +174,7 @@ export const handlePrompt = async (req: Request, res: Response) => {
 // --- Follow-up Prompt Handler ---
 export const handleFollowUpPrompt = async (req: Request, res: Response) => {
   try {
-    const { followUprompt, previousGenRes, height, width, fps, frameCount, chatSessionId } = req.body;
+    const { followUprompt, previousGenRes, height, width, fps, frameCount, chatSessionId, model } = req.body;
 
     if (!followUprompt || !previousGenRes || !height || !width || !fps || !frameCount || !chatSessionId) {
       res.status(400).json({
@@ -187,7 +192,7 @@ export const handleFollowUpPrompt = async (req: Request, res: Response) => {
     //   },
     // });
     const response = await generateText({
-      model: google(process.env.LLM_MODEL!),
+      model: openrouter(model || process.env.LLM_MODEL!),
       prompt: modifySketchSystemPrompt + followUprompt + previousGenRes,
       system: newSystemPrompt
     })

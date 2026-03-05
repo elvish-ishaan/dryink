@@ -15,6 +15,7 @@ interface PromptCardProps {
       height: number;
       fps: number;
       frameCount: number;
+      model: string;
     }
   ) => Promise<{
     videoUrl: string;
@@ -25,7 +26,7 @@ interface PromptCardProps {
 
 export default function PromptCard({ onSubmit }: PromptCardProps) {
   const [promptHistory, setPromptHistory] = useState<PromptItem[]>([]);
-    
+
   const handlePromptSubmit = async (
     prompt: string,
     params: {
@@ -33,6 +34,7 @@ export default function PromptCard({ onSubmit }: PromptCardProps) {
       height: number;
       fps: number;
       frameCount: number;
+      model: string;
     }
   ) => {
     const timestamp = Date.now();

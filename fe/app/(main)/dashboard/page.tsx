@@ -28,80 +28,49 @@ const Page = () => {
   // Use ref to store interval ID
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Function to start polling
-  const startPolling = (jobId: string) => {
+  // Function to start polling, returns a Promise that resolves when job completes
+  const startPolling = (jobId: string): Promise<{ videoUrl: string; genRes: string }> => {
     // Clear any existing interval
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
 
-    console.log(`Starting polling for job: ${jobId}`);
+    return new Promise((resolve, reject) => {
+      intervalRef.current = setInterval(async () => {
+        try {
+          const res = await axios.get(`${BACKEND_BASE_URL}/prompt/${jobId}`, {
+            headers: {
+              'Content-Type': 'application/json',
+              "Authorization": `Bearer ${session?.user?.accessToken}`
+            },
+          });
 
-    intervalRef.current = setInterval(async () => {
-      try {
-        console.log(`Polling job: ${jobId}`);
-        const res = await axios.get(`${BACKEND_BASE_URL}/prompt/${jobId}`, {
-          headers: { 
-            'Content-Type': 'application/json',
-            "Authorization": `Bearer ${session?.user?.accessToken}`
-          },
-        });
+          if (!res.data.success) return;
 
-        console.log('Polling response.....................:', res.data.data);
-        
-        if (!res.data.success) {
-          console.log('Polling response not successful, continuing...');
-          return;
-        }
-        
-        if (res.data.data?.status === "completed") {
-          console.log('Job completed! Stopping polling...');
-          
-          // IMPORTANT: Stop polling first
-          if (intervalRef.current) {
-            clearInterval(intervalRef.current);
-            intervalRef.current = null;
+          if (res.data.data?.status === "completed") {
+            if (intervalRef.current) {
+              clearInterval(intervalRef.current);
+              intervalRef.current = null;
+            }
+            setLoading(false);
+            setCurrentVideoUrl(res.data.data?.genUrl);
+            resolve({ videoUrl: res.data.data?.genUrl || '', genRes: res.data.data?.genRes || '' });
+          } else if (res.data.data.status === 'failed') {
+            if (intervalRef.current) {
+              clearInterval(intervalRef.current);
+              intervalRef.current = null;
+            }
+            setLoading(false);
+            toast.error('Video generation failed');
+            reject(new Error('Video generation failed'));
           }
-          
-          setLoading(false);
-          
-          // Update current states
-          setCurrentVideoUrl(res.data.data?.genUrl);
-          // setCurrentResponse(res.data.data?.genRes || res.data.data?.response || '');
-          
-         // Update video history with the completed video
-          // setVideoHistory(prev => {
-          //   const newUrls = [...prev.urls];
-          //   if (newUrls.length > 0 && prev.currentIndex >= 0) {
-          //     newUrls[prev.currentIndex] = {
-          //       url: res.data?.genUrl || '',
-          //       prompt: newUrls[prev.currentIndex].prompt,
-          //     };
-          //   }
-          //   return {
-          //     ...prev,
-          //     urls: newUrls
-          //   };
-          // });
-          
-        } else if (res.data.data.status === 'failed') {
-          console.log('Job failed! Stopping polling...');
-          
-          // Stop polling on failure
-          if (intervalRef.current) {
-            clearInterval(intervalRef.current);
-            intervalRef.current = null;
-          }
-          
-          setLoading(false);
-          toast.error('Video generation failed');
+        } catch (error) {
+          console.error('Polling error:', error);
+          // Don't stop polling on network errors, might be temporary
         }
-      } catch (error) {
-        console.error('Polling error:', error);
-        // Don't stop polling on network errors, might be temporary
-      }
-    }, 3000);
+      }, 3000);
+    });
   };
 
   // Function to stop polling
@@ -128,6 +97,7 @@ const Page = () => {
     height: number;
     fps: number;
     frameCount: number;
+    model: string;
   }) => {
     setLoading(true);
     
@@ -169,39 +139,35 @@ const Page = () => {
         setSessionId(data.data?.chatSessionId);
       }
 
-      // Set current job ID and start polling
-      if (data.data?.jobId) {
-        startPolling(data.data.jobId);
-      }
-
       // Set current prompt and clear previous data
       setCurrentPrompt(data.data?.prompt || prompt);
-      setCurrentResponse(data.data?.genRes || ''); // Will be updated when polling completes
-      setCurrentVideoUrl(null); // Will be updated when polling completes
+      setCurrentResponse(data.data?.genRes || '');
+      setCurrentVideoUrl(null);
       setIsFollowUp(true);
 
-      // Add to history (video URL will be updated when polling completes)
-      const newHistoryItem = {
-        url: data.data?.genUrl || '', // Will be updated when video is ready
-        prompt: data.data?.prompt || prompt,
-        genRes: data.data?.genRes || '' // Will be updated when polling completes
-      };
+      // Start polling and wait for job completion
+      if (data.data?.jobId) {
+        const pollResult = await startPolling(data.data.jobId);
 
-      setVideoHistory(prev => {
-        const newUrls = prev.urls.slice(0, prev.currentIndex + 1);
-        newUrls.push(newHistoryItem);
-        return {
-          urls: newUrls,
-          currentIndex: newUrls.length - 1
+        // Add to history once video is ready
+        const newHistoryItem = {
+          url: pollResult.videoUrl,
+          prompt: data.data?.prompt || prompt,
+          genRes: pollResult.genRes,
         };
-      });
 
-      return {
-        status: data.data?.status || '',
-        videoUrl: data.data?.genUrl || '',
-        genRes: data.data?.genRes || '',
-        prompt: data.data?.prompt || prompt
-      };
+        setVideoHistory(prev => {
+          const newUrls = prev.urls.slice(0, prev.currentIndex + 1);
+          newUrls.push(newHistoryItem);
+          return { urls: newUrls, currentIndex: newUrls.length - 1 };
+        });
+
+        return {
+          videoUrl: pollResult.videoUrl,
+          genRes: pollResult.genRes,
+          prompt: data.data?.prompt || prompt,
+        };
+      }
 
     } catch (err) {
       console.error('Submit error:', err);

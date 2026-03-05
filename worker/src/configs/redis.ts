@@ -4,7 +4,8 @@ dotenv.config();
 
 const REDIS_URL = process.env.REDIS_URL! || 'redis://localhost:6379';
 export const redisSubscriber = createClient({
-  url: REDIS_URL!
+  url: REDIS_URL!,
+  RESP: 2,
 });
 
 async function connectRedis() {
