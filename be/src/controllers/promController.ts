@@ -1,23 +1,22 @@
 import { Request, Response } from "express";
-import { modifySketchSystemPrompt, newSystemPrompt, systemPrompt, userPromptEnhancerSystemPrompt } from "../lib/prompts";
-import { redisPublisher } from "../configs/redisConfig";
+import { modifySketchSystemPrompt, newSystemPrompt } from "../lib/prompts";
+import { taskQueue } from "../configs/queueConfig";
 import { v4 as uuidv4 } from 'uuid';
 import { getGcpSignedUrl } from "../lib/utils";
 import prisma from "../client/prismaClient";
 import { generateText } from 'ai';
 import { createOpenAI } from "@ai-sdk/openai";
+import { logger } from "../lib/logger";
 
 const openrouter = createOpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
   apiKey: process.env.OPENROUTER_API_KEY!,
 });
 
-
-
 enum JobStatus {
-    PENDING = "pending",
-    COMPLETED = "completed",
-    FAILED = "failed",
+  PENDING = "pending",
+  COMPLETED = "completed",
+  FAILED = "failed",
 }
 
 interface JobData {
@@ -27,8 +26,12 @@ interface JobData {
   response?: string | null,
   height?: number,
   width?: number,
-  fps?: number, 
+  fps?: number,
   frameCount?: number,
+}
+
+function validateLlmResponse(text: string): boolean {
+  return text.includes('```html') && text.includes('setFrame');
 }
 
 // --- Main Prompt Handler ---
@@ -37,74 +40,68 @@ export const handlePrompt = async (req: Request, res: Response) => {
     const { prompt, height, width, fps, frameCount, model } = req.body;
 
     if (!prompt || !height || !width || !fps || !frameCount) {
-       res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'All parameters are required',
       });
-      return
+      return;
     }
 
-    console.log('generating main response from code gen model............')
+    logger.info('Generating main response from code gen model');
     const startTime = Date.now();
     const response = await generateText({
       model: openrouter(model || process.env.LLM_MODEL!),
       prompt: prompt,
       system: newSystemPrompt,
       temperature: 0.3
-    })
-    const endTime = Date.now();
-    console.log('time taken:', endTime - startTime)
-    console.log('response generated........')
+    });
+    logger.info({ ms: Date.now() - startTime }, 'Response generated');
 
-    //init a job for user
+    if (!validateLlmResponse(response.text)) {
+      logger.warn('LLM response failed validation');
+      res.status(422).json({
+        success: false,
+        message: 'LLM did not return valid animation code',
+      });
+      return;
+    }
+
+    // Init a job for user
     const job = await prisma.job.create({
       data: {
         userId: req.user?.id,
         status: JobStatus.PENDING,
       }
-    })
+    });
 
-    if(!job){
+    if (!job) {
       res.status(500).json({
         success: false,
         message: 'Unable to create job'
-      })
-      return
+      });
+      return;
     }
 
-    //update the other meta data to db
     let chatSession;
     let chat;
     try {
-      //first find the user
       const user = await prisma.user.findUnique({
-        where: {
-          email: req.user?.email,
-        },
-        include:{
-          chatSessions: {
-            include: {
-              chats: true
-            }
-          }
-        }
+        where: { email: req.user?.email },
+        include: { chatSessions: { include: { chats: true } } }
       });
-      if(!user){
+
+      if (!user) {
         res.status(401).json({
           success: false,
           message: 'User not found',
         });
-        return
+        return;
       }
 
-      //create a new chat session
       chatSession = await prisma.chatSession.create({
-        data: {
-          userId: user?.id,
-        },
+        data: { userId: user?.id },
       });
 
-      //create a new chat
       chat = await prisma.chat.create({
         data: {
           chatSessionId: chatSession.id,
@@ -112,28 +109,26 @@ export const handlePrompt = async (req: Request, res: Response) => {
           responce: response.text as string,
         },
       });
-    
     } catch (error) {
-      console.log(error,'getting error in database operation in handlePrompt')
+      logger.error(error, 'Database error in handlePrompt');
     }
 
-    if(!chatSession){
+    if (!chatSession) {
       res.status(500).json({
         success: false,
         message: 'Unable to create chat session'
-      })
-      return
+      });
+      return;
     }
 
-    if(!chat){
+    if (!chat) {
       res.status(500).json({
         success: false,
         message: 'Unable to create chat'
-      })
-      return
+      });
+      return;
     }
-    
-    //return jobid to user immediately
+
     res.json({
       success: true,
       data: {
@@ -144,7 +139,6 @@ export const handlePrompt = async (req: Request, res: Response) => {
       },
     });
 
-    //create a job for redis
     const jobData: JobData = {
       jobId: job.id,
       chatId: chat?.id,
@@ -156,18 +150,16 @@ export const handlePrompt = async (req: Request, res: Response) => {
       frameCount,
     };
 
-    //now publish the job to redis
-    console.log('job published...........');
-    // Push job to queue
-    await redisPublisher.publish('tasks', JSON.stringify(jobData));
+    logger.info({ jobId: job.id }, 'Publishing job to queue');
+    await taskQueue.add('video-gen', jobData);
 
   } catch (error) {
-    console.error('handlePrompt error:', error);
+    logger.error(error, 'handlePrompt error');
     res.status(500).json({
       success: false,
       message: 'Internal server error',
     });
-    return
+    return;
   }
 };
 
@@ -181,39 +173,39 @@ export const handleFollowUpPrompt = async (req: Request, res: Response) => {
         success: false,
         message: 'All parameters are required',
       });
-      return
+      return;
     }
 
-    // const response = await ai.models.generateContent({
-    //   model: process.env.LLM_MODEL as string,
-    //   contents: modifySketchSystemPrompt + followUprompt + previousGenRes as string,
-    //   config: {
-    //     systemInstruction: newSystemPrompt, 
-    //   },
-    // });
     const response = await generateText({
       model: openrouter(model || process.env.LLM_MODEL!),
       prompt: modifySketchSystemPrompt + followUprompt + previousGenRes,
       system: newSystemPrompt
-    })
+    });
 
-    //init a job for user
+    if (!validateLlmResponse(response.text)) {
+      logger.warn('LLM follow-up response failed validation');
+      res.status(422).json({
+        success: false,
+        message: 'LLM did not return valid animation code',
+      });
+      return;
+    }
+
     const job = await prisma.job.create({
       data: {
         userId: req.user?.id,
         status: JobStatus.PENDING,
       }
-    })
+    });
 
-    if(!job){
+    if (!job) {
       res.status(500).json({
         success: false,
         message: 'Unable to create job'
-      })
-      return
+      });
+      return;
     }
 
-    // Create follow-up chat
     const chat = await prisma.chat.create({
       data: {
         chatSessionId: chatSessionId,
@@ -222,15 +214,14 @@ export const handleFollowUpPrompt = async (req: Request, res: Response) => {
       },
     });
 
-    if(!chat){
+    if (!chat) {
       res.status(500).json({
         success: false,
         message: 'Unable to create chat'
-      })
-      return
+      });
+      return;
     }
 
-    // //return jobid to user immediately
     res.json({
       success: true,
       data: {
@@ -241,7 +232,6 @@ export const handleFollowUpPrompt = async (req: Request, res: Response) => {
       },
     });
 
-    //init job
     const jobData: JobData = {
       jobId: job.id,
       chatId: chat?.id,
@@ -253,17 +243,16 @@ export const handleFollowUpPrompt = async (req: Request, res: Response) => {
       frameCount,
     };
 
-    //now publish the job to redis
-    console.log('follow up job published...........');
-    await redisPublisher.publish('tasks', JSON.stringify(jobData));
+    logger.info({ jobId: job.id }, 'Publishing follow-up job to queue');
+    await taskQueue.add('video-gen', jobData);
 
   } catch (error) {
-    console.error('handleFollowUpPrompt error:', error);
+    logger.error(error, 'handleFollowUpPrompt error');
     res.status(500).json({
       success: false,
       message: 'Internal server error',
     });
-    return
+    return;
   }
 };
 
@@ -281,10 +270,7 @@ export const handleJobStatus = async (req: Request, res: Response) => {
     }
 
     const job = await prisma.job.findFirst({
-      where: {
-        id: jobId,
-      },
-      
+      where: { id: jobId },
     });
 
     if (!job) {
@@ -295,18 +281,15 @@ export const handleJobStatus = async (req: Request, res: Response) => {
       return;
     }
 
-    if(job.status === 'pending'){ 
+    if (job.status === 'pending') {
       res.json({
         success: false,
         message: 'job pending',
-        data: {
-          status: job.status
-        }
+        data: { status: job.status }
       });
       return;
     }
 
-    //send res with job status and genUrl
     res.json({
       success: true,
       data: {
@@ -314,9 +297,9 @@ export const handleJobStatus = async (req: Request, res: Response) => {
         genUrl: job.genUrl,
       }
     });
-    return
+    return;
   } catch (error) {
-    console.error('handleJobStatus error:', error);
+    logger.error(error, 'handleJobStatus error');
     res.status(500).json({
       success: false,
       message: 'Internal server error',

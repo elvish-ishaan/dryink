@@ -1,15 +1,16 @@
 import express from "express";
-import { redisSubscriber } from "./configs/redis";
+import { Worker } from 'bullmq';
+import { connection } from "./configs/redis";
 import { generateVideo } from "./core/operation";
 import { uploadToGcp } from "./configs/gcpStorage";
-import fs from 'fs'
+import fs from 'fs-extra';
 import path from "path";
 import prisma from "./configs/prismaclient";
-
+import { logger } from "./lib/logger";
 
 const app = express();
 
-app.use(express.json())
+app.use(express.json());
 
 const PORT = process.env.PORT || 5001;
 
@@ -17,82 +18,65 @@ app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
-const taskQueueKey = 'tasks';
-
 enum JobStatus {
-    PENDING = "pending",
-    FAILED = "failed",
-    COMPLETED = "completed",
+  PENDING = "pending",
+  FAILED = "failed",
+  COMPLETED = "completed",
 }
 
-async function startWorker() {
-      try {
-        //get the job when available
-        redisSubscriber.subscribe(taskQueueKey, async (job) => {
-          const jobData = JSON.parse(job);
-          console.log(jobData, 'getting job data')
-          //generating video
-          const videoPath = await generateVideo({
-            htmlContent: jobData.response,
-            width: jobData.width || 800,
-            height: jobData.height || 720,
-            fps: jobData.fps || 30,  // Frames per second
-            frameCount: jobData.frameCount || 100,  // Number of frames to render FIX IT LATER  
-            videoName: 'output.mp4',
-          });
-          
-          //upload the video to s3
-          const uploadedObjUrl = await uploadToGcp(videoPath, `${jobData.jobId}.mp4`);
-          if(!uploadedObjUrl){
-            console.log('error in uploading to s3')
-          }
-          
-          //remove the whole directory from local storage
-          //go back to one level then remove the directory
-          const folderToDlt = path.dirname(videoPath)
-          console.log(folderToDlt, 'folder to delete')
-          try {
-            fs.rm(folderToDlt, { recursive: true }, (err) => {
-              if (err) {
-                console.error(`Error deleting folder ${folderToDlt}:`, err);
-              } else {
-                console.log(`Successfully deleted folder: ${folderToDlt}`);
-              }
-            });
-          }catch{
-            console.log('error in deleting folder')
-          }
-          //update the job status to completed in db
-            await prisma.job.update({
-            where: {
-              id: jobData.jobId,
-            },
-            data: {
-              status: JobStatus.COMPLETED,
-              genUrl: uploadedObjUrl,
-            }
-          })
-          //update the chat also
-          await prisma.chat.update({
-            where: {
-              id: jobData.chatId,
-            },
-            data: {
-              responce: jobData.response,
-              genUrl: uploadedObjUrl,
-            }
-          })
-        });
-      } catch (error) {
-        console.error('Error processing task:', error);
-        throw new Error('Error processing task');
-      }
-}
+const worker = new Worker('tasks', async (job) => {
+  const jobData = job.data;
+  logger.info({ jobId: jobData.jobId }, 'Processing job');
 
-console.log('Worker started. Waiting for tasks...');
-startWorker().catch(console.error);
+  try {
+    const videoPath = await generateVideo({
+      htmlContent: jobData.response,
+      width: jobData.width || 800,
+      height: jobData.height || 720,
+      fps: jobData.fps || 30,
+      frameCount: jobData.frameCount || 100,
+      videoName: 'output.mp4',
+    });
 
-app.listen( PORT, () => {
-  console.log(`Server running at ${PORT}`);
+    const uploadedObjUrl = await uploadToGcp(videoPath, `${jobData.jobId}.mp4`);
+
+    if (!uploadedObjUrl) {
+      throw new Error('Upload to GCP returned null/undefined URL');
+    }
+
+    const folderToDlt = path.dirname(videoPath);
+    logger.info({ folderToDlt }, 'Deleting temp folder');
+    await fs.remove(folderToDlt);
+
+    await prisma.job.update({
+      where: { id: jobData.jobId },
+      data: { status: JobStatus.COMPLETED, genUrl: uploadedObjUrl },
+    });
+
+    await prisma.chat.update({
+      where: { id: jobData.chatId },
+      data: { responce: jobData.response, genUrl: uploadedObjUrl },
+    });
+
+    logger.info({ jobId: jobData.jobId }, 'Job completed');
+  } catch (error) {
+    logger.error(error, `Job ${jobData.jobId} failed`);
+
+    await prisma.job.update({
+      where: { id: jobData.jobId },
+      data: { status: JobStatus.FAILED },
+    });
+
+    throw error;
+  }
+}, { connection });
+
+worker.on('failed', (job, err) => {
+  logger.error(err, `BullMQ job ${job?.id} failed`);
 });
 
+logger.info('Worker started. Waiting for tasks...');
+
+app.listen(PORT, () => {
+  logger.info(`Server running at ${PORT}`);
+});

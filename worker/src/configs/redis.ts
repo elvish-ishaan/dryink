@@ -1,17 +1,7 @@
-import dotenv from 'dotenv';
-import { createClient } from "redis";
-dotenv.config();
+const redisUrl = new URL(process.env.REDIS_URL || 'redis://localhost:6379');
 
-const REDIS_URL = process.env.REDIS_URL! || 'redis://localhost:6379';
-export const redisSubscriber = createClient({
-  url: REDIS_URL!,
-  RESP: 2,
-});
-
-async function connectRedis() {
-    redisSubscriber.on('error', err => console.log('Redis Client Error', err));
-    await redisSubscriber.connect();
-    console.log('Redis worker Client Connected');
-}
-
-connectRedis();
+export const connection = {
+  host: redisUrl.hostname,
+  port: parseInt(redisUrl.port || '6379'),
+  maxRetriesPerRequest: null as null,
+};

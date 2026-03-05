@@ -32,6 +32,7 @@ export default function SessionPage() {
   const [loading, setLoading] = useState(!!jobIdFromUrl);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const pollCountRef = useRef(0);
   // Keep currentResponse accessible in polling closure without stale closure issues
   const currentResponseRef = useRef<string>('');
 
@@ -61,9 +62,21 @@ export default function SessionPage() {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
+    pollCountRef.current = 0;
 
     return new Promise((resolve, reject) => {
       intervalRef.current = setInterval(async () => {
+        pollCountRef.current += 1;
+
+        if (pollCountRef.current >= 100) {
+          clearInterval(intervalRef.current!);
+          intervalRef.current = null;
+          setLoading(false);
+          toast.error('Generation timed out');
+          reject(new Error('timeout'));
+          return;
+        }
+
         try {
           const res = await fetch(`${BACKEND_BASE_URL}/prompt/${jobId}`, {
             headers: { Authorization: `Bearer ${token}` },

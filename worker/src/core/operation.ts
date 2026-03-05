@@ -4,6 +4,7 @@ import path from 'path';
 import ffmpegPath from 'ffmpeg-static';
 import { tmpdir } from 'os';
 import { spawn } from 'child_process';
+import { logger } from '../lib/logger';
 
 interface RenderHTMLToVideoOptions {
   htmlContent: string;
@@ -11,7 +12,7 @@ interface RenderHTMLToVideoOptions {
   height?: number;
   fps?: number;
   frameCount?: number;
-  videoName?: string; // defaults to "output.mp4"
+  videoName?: string;
 }
 
 export async function generateVideo(opts: RenderHTMLToVideoOptions): Promise<string> {
@@ -42,7 +43,7 @@ export async function generateVideo(opts: RenderHTMLToVideoOptions): Promise<str
     await page.setViewport({ width, height });
     await page.goto(`file://${htmlPath}`);
 
-    console.log('Starting frame capture...');
+    logger.info('Starting frame capture');
     for (let i = 0; i < frameCount; i++) {
       const filename = path.join(framesDir, `frame_${String(i).padStart(4, '0')}.png`);
       await page.evaluate((frameNum) => {
@@ -53,17 +54,19 @@ export async function generateVideo(opts: RenderHTMLToVideoOptions): Promise<str
         }
       }, i);
       await page.screenshot({ path: filename });
-      console.log(`Captured frame ${i + 1}/${frameCount}`);
+      if ((i + 1) % 10 === 0) {
+        logger.info(`Captured frame ${i + 1}/${frameCount}`);
+      }
     }
     await browser.close();
 
-    console.log('Generating video with FFmpeg...');
+    logger.info('Generating video with FFmpeg');
     await runFFmpeg(framesDir, outputPath, fps);
-    console.log(`Video saved to ${outputPath}`);
+    logger.info({ outputPath }, 'Video saved');
 
-    return outputPath; // Let the caller handle cleanup & upload
+    return outputPath;
   } catch (err) {
-    console.error('Error during video generation:', err);
+    logger.error(err, 'Error during video generation');
     throw err;
   }
 }
@@ -82,12 +85,8 @@ function runFFmpeg(framesDir: string, outputPath: string, fps: number): Promise<
       outputPath,
     ]);
 
-    ffmpeg.stdout.on('data', (data) => {
-      console.log(`FFmpeg stdout: ${data}`);
-    });
-
     ffmpeg.stderr.on('data', (data) => {
-      console.log(`FFmpeg stderr: ${data}`);
+      logger.debug(`FFmpeg: ${data}`);
     });
 
     ffmpeg.on('close', (code) => {
