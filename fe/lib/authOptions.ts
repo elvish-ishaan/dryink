@@ -71,25 +71,19 @@ export const authOptions: NextAuthOptions = {
     
     callbacks: {
         async jwt({ token, user }) {
-          // Only create custom access token on initial login
           if (user) {
             token.id = user.id;
             token.email = user.email;
+            token.name = user.name;
+          }
 
-            // Create your own access token
-            const customAccessToken = jwt.sign(
-        {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-        },
-        JWT_SECRET,
-        {
-          expiresIn: '1h',
-        }
+          // Regenerate customAccessToken if missing or expired
+          if (!token.customAccessToken && token.id && token.email) {
+            token.customAccessToken = jwt.sign(
+              { id: token.id, email: token.email, name: token.name },
+              JWT_SECRET,
+              { expiresIn: '1h' }
             );
-
-            token.customAccessToken = customAccessToken;
           }
 
           return token;

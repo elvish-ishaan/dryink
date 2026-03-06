@@ -4,10 +4,11 @@ import { taskQueue } from "../configs/queueConfig";
 import { v4 as uuidv4 } from 'uuid';
 import { getGcpSignedUrl } from "../lib/utils";
 import prisma from "../client/prismaClient";
-import { OpenRouter } from "@openrouter/sdk";
+import OpenAI from "openai";
 import { logger } from "../lib/logger";
 
-const openrouter = new OpenRouter({
+const openrouter = new OpenAI({
+  baseURL: 'https://openrouter.ai/api/v1',
   apiKey: process.env.OPENROUTER_API_KEY!,
 });
 
@@ -45,7 +46,7 @@ export const handlePrompt = async (req: Request, res: Response) => {
 
     logger.info('Generating main response from code gen model');
     const startTime = Date.now();
-    const completion = await openrouter.chat.send({
+    const completion = await openrouter.chat.completions.create({
       model: resolvedModel,
       messages: [
         { role: 'system', content: newSystemPrompt },
@@ -173,7 +174,7 @@ export const handleFollowUpPrompt = async (req: Request, res: Response) => {
       return;
     }
 
-    const followUpCompletion = await openrouter.chat.send({
+    const followUpCompletion = await openrouter.chat.completions.create({
       model: resolvedModel,
       messages: [
         { role: 'system', content: newSystemPrompt },

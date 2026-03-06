@@ -179,6 +179,7 @@ export default function AuthPage({ type = "login" }) {
             <div className=" w-fit gap-5 flex justify-around">
                     {/* GitHub Auth */}
           <Button
+            type="button"
             onClick={handleGithubLogin}
             variant="outline"
             className="w-full flex items-center justify-center cursor-pointer"
@@ -189,6 +190,7 @@ export default function AuthPage({ type = "login" }) {
           </Button>
             {/* Google Auth */}
             <Button
+              type="button"
               onClick={handleGoogleLogin}
               variant="outline"
               className="w-full flex items-center justify-center cursor-pointer"
