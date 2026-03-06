@@ -31,10 +31,7 @@ const worker = new Worker('tasks', async (job) => {
   try {
     const videoPath = await generateVideo({
       htmlContent: jobData.response,
-      width: jobData.width || 800,
-      height: jobData.height || 720,
-      fps: jobData.fps || 30,
-      frameCount: jobData.frameCount || 100,
+      fps: jobData.fps || 24,
       videoName: 'output.mp4',
     });
 

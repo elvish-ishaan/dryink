@@ -4,12 +4,10 @@ import { taskQueue } from "../configs/queueConfig";
 import { v4 as uuidv4 } from 'uuid';
 import { getGcpSignedUrl } from "../lib/utils";
 import prisma from "../client/prismaClient";
-import { generateText } from 'ai';
-import { createOpenAI } from "@ai-sdk/openai";
+import { OpenRouter } from "@openrouter/sdk";
 import { logger } from "../lib/logger";
 
-const openrouter = createOpenAI({
-  baseURL: 'https://openrouter.ai/api/v1',
+const openrouter = new OpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY!,
 });
 
@@ -24,40 +22,41 @@ interface JobData {
   chatId: string,
   status: JobStatus,
   response?: string | null,
-  height?: number,
-  width?: number,
   fps?: number,
-  frameCount?: number,
 }
 
 function validateLlmResponse(text: string): boolean {
-  return text.includes('```html') && text.includes('setFrame');
+  return text.includes('```html') && text.includes('setFrame') && text.includes('getTotalFrames');
 }
 
 // --- Main Prompt Handler ---
 export const handlePrompt = async (req: Request, res: Response) => {
   try {
-    const { prompt, height, width, fps, frameCount, model } = req.body;
+    const { prompt, fps, model } = req.body;
 
-    if (!prompt || !height || !width || !fps || !frameCount) {
+    const resolvedModel = (model && model.trim()) || process.env.LLM_MODEL;
+    if (!prompt || !fps || !resolvedModel) {
       res.status(400).json({
         success: false,
-        message: 'All parameters are required',
+        message: !resolvedModel ? 'No model selected and LLM_MODEL env var is not set' : 'All parameters are required',
       });
       return;
     }
 
     logger.info('Generating main response from code gen model');
     const startTime = Date.now();
-    const response = await generateText({
-      model: openrouter(model || process.env.LLM_MODEL!),
-      prompt: prompt,
-      system: newSystemPrompt,
-      temperature: 0.3
+    const completion = await openrouter.chat.send({
+      model: resolvedModel,
+      messages: [
+        { role: 'system', content: newSystemPrompt },
+        { role: 'user', content: prompt },
+      ],
     });
     logger.info({ ms: Date.now() - startTime }, 'Response generated');
 
-    if (!validateLlmResponse(response.text)) {
+    const responseText = completion.choices[0].message.content ?? '';
+
+    if (!validateLlmResponse(responseText)) {
       logger.warn('LLM response failed validation');
       res.status(422).json({
         success: false,
@@ -106,7 +105,7 @@ export const handlePrompt = async (req: Request, res: Response) => {
         data: {
           chatSessionId: chatSession.id,
           prompt,
-          responce: response.text as string,
+          responce: responseText,
         },
       });
     } catch (error) {
@@ -135,7 +134,7 @@ export const handlePrompt = async (req: Request, res: Response) => {
         chatSessionId: chatSession?.id,
         jobId: job?.id,
         prompt: prompt,
-        genRes: response.text,
+        genRes: responseText,
       },
     });
 
@@ -143,11 +142,8 @@ export const handlePrompt = async (req: Request, res: Response) => {
       jobId: job.id,
       chatId: chat?.id,
       status: JobStatus.PENDING,
-      response: response.text,
-      height,
-      width,
+      response: responseText,
       fps,
-      frameCount,
     };
 
     logger.info({ jobId: job.id }, 'Publishing job to queue');
@@ -166,23 +162,28 @@ export const handlePrompt = async (req: Request, res: Response) => {
 // --- Follow-up Prompt Handler ---
 export const handleFollowUpPrompt = async (req: Request, res: Response) => {
   try {
-    const { followUprompt, previousGenRes, height, width, fps, frameCount, chatSessionId, model } = req.body;
+    const { followUprompt, previousGenRes, fps, chatSessionId, model } = req.body;
 
-    if (!followUprompt || !previousGenRes || !height || !width || !fps || !frameCount || !chatSessionId) {
+    const resolvedModel = (model && model.trim()) || process.env.LLM_MODEL;
+    if (!followUprompt || !previousGenRes || !fps || !chatSessionId || !resolvedModel) {
       res.status(400).json({
         success: false,
-        message: 'All parameters are required',
+        message: !resolvedModel ? 'No model selected and LLM_MODEL env var is not set' : 'All parameters are required',
       });
       return;
     }
 
-    const response = await generateText({
-      model: openrouter(model || process.env.LLM_MODEL!),
-      prompt: modifySketchSystemPrompt + followUprompt + previousGenRes,
-      system: newSystemPrompt
+    const followUpCompletion = await openrouter.chat.send({
+      model: resolvedModel,
+      messages: [
+        { role: 'system', content: newSystemPrompt },
+        { role: 'user', content: modifySketchSystemPrompt + followUprompt + previousGenRes },
+      ],
     });
 
-    if (!validateLlmResponse(response.text)) {
+    const followUpResponseText = followUpCompletion.choices[0].message.content ?? '';
+
+    if (!validateLlmResponse(followUpResponseText)) {
       logger.warn('LLM follow-up response failed validation');
       res.status(422).json({
         success: false,
@@ -210,7 +211,7 @@ export const handleFollowUpPrompt = async (req: Request, res: Response) => {
       data: {
         chatSessionId: chatSessionId,
         prompt: followUprompt,
-        responce: response.text as string,
+        responce: followUpResponseText,
       },
     });
 
@@ -228,7 +229,7 @@ export const handleFollowUpPrompt = async (req: Request, res: Response) => {
         chatSessionId: chatSessionId,
         jobId: job?.id,
         prompt: followUprompt,
-        genRes: response.text,
+        genRes: followUpResponseText,
       },
     });
 
@@ -236,11 +237,8 @@ export const handleFollowUpPrompt = async (req: Request, res: Response) => {
       jobId: job.id,
       chatId: chat?.id,
       status: JobStatus.PENDING,
-      response: response.text,
-      height,
-      width,
+      response: followUpResponseText,
       fps,
-      frameCount,
     };
 
     logger.info({ jobId: job.id }, 'Publishing follow-up job to queue');

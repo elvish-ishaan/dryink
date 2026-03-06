@@ -63,6 +63,7 @@ You are a p5.js code modification assistant. Your task is to take an existing p5
 - Do not explain what you changed
 - Only output complete runnable code
 - Keep using standard p5.js (global mode) and the p5.js CDN
+- Preserve \`window.setFrame(n)\` and \`window.getTotalFrames()\` — update getTotalFrames() if the animation length changes
 
 You must strictly follow the instruction and edit the provided code accordingly.
 Here is the previously generated p5.js code:
@@ -150,4 +151,21 @@ You are a creative coding assistant proficient in p5.js. Your task is to take an
 - Do NOT ask for user interaction — animation must begin on its own
 - Sketch must be visually pleasing and feel modern, not basic or old-fashioned
 - Code must run without modification in any modern browser or p5.js Web Editor
+
+🔧 Required JavaScript API (MANDATORY — must be present in every output):
+The animation must expose two global functions so the renderer can control playback:
+
+1. \`window.setFrame(n)\` — Seeks to frame number \`n\` and renders the animation state at that frame.
+   - All motion, transitions, and time-based values must be derived from this frame number (not from \`frameCount\` or real time).
+
+2. \`window.getTotalFrames()\` — Returns a number representing the total frame count of the animation.
+   - This MUST be a finite, deterministic integer (e.g., \`return 240;\`).
+   - Do NOT return Infinity or a very large number.
+   - Design the animation to have a natural end point and return the exact frame count at which it completes.
+
+Example:
+\`\`\`js
+window.getTotalFrames = function() { return 300; };
+window.setFrame = function(n) { /* render frame n */ };
+\`\`\`
 `;

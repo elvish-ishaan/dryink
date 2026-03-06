@@ -15,10 +15,7 @@ const Page = () => {
   const router = useRouter();
 
   const handlePromptSubmit = async (prompt: string, params: {
-    width: number;
-    height: number;
     fps: number;
-    frameCount: number;
     model: string;
   }) => {
     setLoading(true);

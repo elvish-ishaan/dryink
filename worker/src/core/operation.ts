@@ -6,24 +6,24 @@ import { tmpdir } from 'os';
 import { spawn } from 'child_process';
 import { logger } from '../lib/logger';
 
+const MAX_FRAME_COUNT = 1440; // 60 seconds at 24 fps safety cap
+const DEFAULT_WIDTH = 1920;
+const DEFAULT_HEIGHT = 1080;
+
 interface RenderHTMLToVideoOptions {
   htmlContent: string;
-  width?: number;
-  height?: number;
   fps?: number;
-  frameCount?: number;
   videoName?: string;
 }
 
 export async function generateVideo(opts: RenderHTMLToVideoOptions): Promise<string> {
   const {
     htmlContent,
-    width = 800,
-    height = 600,
-    fps = 30,
-    frameCount = 500,
+    fps = 24,
     videoName = 'output.mp4',
   } = opts;
+  const width = DEFAULT_WIDTH;
+  const height = DEFAULT_HEIGHT;
 
   const jobId = `job-${Date.now()}`;
   const baseDir = path.join(tmpdir(), jobId);
@@ -42,6 +42,18 @@ export async function generateVideo(opts: RenderHTMLToVideoOptions): Promise<str
     const page = await browser.newPage();
     await page.setViewport({ width, height });
     await page.goto(`file://${htmlPath}`);
+
+    // Detect total frames from animation, capped at MAX_FRAME_COUNT
+    const detectedFrames = await page.evaluate(() => {
+      // @ts-ignore
+      if (typeof window.getTotalFrames === 'function') {
+        // @ts-ignore
+        return Math.min(Math.max(1, Math.round(window.getTotalFrames())), 1440);
+      }
+      return 240; // fallback: 10s at 24fps
+    });
+    const frameCount = Math.min(detectedFrames, MAX_FRAME_COUNT);
+    logger.info({ frameCount }, 'Detected animation frame count');
 
     logger.info('Starting frame capture');
     for (let i = 0; i < frameCount; i++) {

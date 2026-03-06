@@ -131,7 +131,7 @@ export default function SessionPage() {
 
   const handlePromptSubmit = async (
     prompt: string,
-    params: { width: number; height: number; fps: number; frameCount: number; model: string }
+    params: { fps: number; model: string }
   ) => {
     setLoading(true);
     const token = authSession?.user?.accessToken;

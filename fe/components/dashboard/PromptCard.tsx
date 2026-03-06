@@ -11,10 +11,7 @@ interface PromptCardProps {
   onSubmit: (
     prompt: string,
     params: {
-      width: number;
-      height: number;
       fps: number;
-      frameCount: number;
       model: string;
     }
   ) => Promise<{
@@ -30,10 +27,7 @@ export default function PromptCard({ onSubmit }: PromptCardProps) {
   const handlePromptSubmit = async (
     prompt: string,
     params: {
-      width: number;
-      height: number;
       fps: number;
-      frameCount: number;
       model: string;
     }
   ) => {
