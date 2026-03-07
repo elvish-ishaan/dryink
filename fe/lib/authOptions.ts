@@ -1,130 +1,95 @@
-import { NextAuthOptions, Session, User } from 'next-auth';
-import GoogleProvider from 'next-auth/providers/google';
-import GithubProvider from "next-auth/providers/github"
-import CredentialsProvider from 'next-auth/providers/credentials';
-import axios from 'axios';
-import jwt from 'jsonwebtoken'
-
-//check for required env variables
-if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SEC || !process.env.NEXTAUTH_SECRET
-    || !process.env.GITHUB_ID || !process.env.GITHUB_SECRET
-) {
-    throw new Error('Missing required environment variables.');
-}
+import { NextAuthOptions, Session, User } from "next-auth";
+import GoogleProvider from "next-auth/providers/google";
+import GithubProvider from "next-auth/providers/github";
+import CredentialsProvider from "next-auth/providers/credentials";
+import axios from "axios";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL;
-const JWT_SECRET = process.env.NEXTAUTH_SECRET!;
 
 export const authOptions: NextAuthOptions = {
-    secret: process.env.NEXTAUTH_SECRET,
-    providers: [
-        GoogleProvider({
-            clientId: process.env.GOOGLE_CLIENT_ID as string,
-            clientSecret: process.env.GOOGLE_CLIENT_SEC as string,
-        }),
-        GithubProvider({
+  secret: process.env.NEXTAUTH_SECRET,
+  providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID as string,
+      clientSecret: process.env.GOOGLE_CLIENT_SEC as string,
+    }),
+    GithubProvider({
       clientId: process.env.GITHUB_ID as string,
       clientSecret: process.env.GITHUB_SECRET as string,
-       }),
-        CredentialsProvider({
-            name: 'Credentials',
-            credentials: {
-                email: { label: 'Email', type: 'text', placeholder: 'Enter your email' },
-                password: { label: 'Password', type: 'password', placeholder: 'Enter your password' },
-            },
-            async authorize(credentials): Promise<User | null> {
-                if (!credentials) {
-                    throw new Error('Missing email or password');
-                }
-
-                const { email, password } = credentials;
-
-                try {
-                    //make backend call to check if user exists
-                    const res = await axios.post(`${BACKEND_URL}/auth/login`, {
-                        email,
-                        password,
-                    });
-                    if (!res.data?.success) {
-                        throw new Error(res.data?.message);
-                    }
-                    const user = await res.data?.user;
-                    return { id: user.id, email: user.email, name: user.name };
-                } catch (error) {
-                    console.error('Error in authorize:', error);
-                    throw new Error('Unable to log in');
-                }
-            },
-        }),
-    ],
-    pages: {
-        signIn: '/login',
-        signOut: '/',
-    },
-    session: {
-        strategy: 'jwt',
-        maxAge: 30 * 24 * 60 * 60, // 30 days
-    },
-    jwt: {
-        secret: process.env.NEXTAUTH_SECRET,
-    },
-    
-    callbacks: {
-        async jwt({ token, user }) {
-          if (user) {
-            token.id = user.id;
-            token.email = user.email;
-            token.name = user.name;
+    }),
+    CredentialsProvider({
+      name: "Credentials",
+      credentials: {
+        email: { label: "Email", type: "text" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials): Promise<User | null> {
+        if (!credentials?.email || !credentials?.password) {
+          return null;
+        }
+        try {
+          const res = await axios.post(`${BACKEND_URL}/auth/login`, {
+            email: credentials.email,
+            password: credentials.password,
+          });
+          if (!res.data?.success) return null;
+          const { user, accessToken } = res.data;
+          return { id: user.id, email: user.email, name: user.name, accessToken };
+        } catch (error) {
+          if (axios.isAxiosError(error) && error.response) {
+            // Backend returned 4xx/5xx — auth failure, stay on login page
+            return null;
           }
-
-          // Regenerate customAccessToken if missing or expired
-          if (!token.customAccessToken && token.id && token.email) {
-            token.customAccessToken = jwt.sign(
-              { id: token.id, email: token.email, name: token.name },
-              JWT_SECRET,
-              { expiresIn: '1h' }
-            );
+          // Network/unexpected error — show generic error page
+          throw new Error("Service unavailable");
+        }
+      },
+    }),
+  ],
+  pages: {
+    signIn: "/login",
+    signOut: "/",
+  },
+  session: {
+    strategy: "jwt",
+    maxAge: 7 * 24 * 60 * 60, // 7 days — matches backend token expiry
+  },
+  callbacks: {
+    async jwt({ token, user, account }) {
+      // Only runs on initial sign-in when both user and account are present
+      if (account && user) {
+        if (account.provider === "credentials") {
+          // accessToken was returned by authorize from the backend
+          token.id = user.id;
+          token.accessToken = (user as User & { accessToken: string }).accessToken;
+        } else {
+          // OAuth: register/fetch user from backend to get a backend-issued token
+          try {
+            const res = await axios.post(`${BACKEND_URL}/auth/signup`, {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              authProvider: account.provider,
+            });
+            if (!res.data?.success) throw new Error(res.data?.message);
+            token.id = res.data.user.id;
+            token.accessToken = res.data.accessToken;
+          } catch (error) {
+            token.error = "OAuthBackendError";
           }
-
-          return token;
-        },
-
-        async signIn({ user, account }): Promise<boolean> {
-            if (user?.email) {
-                if (account?.provider === 'credentials') {
-                  return true; // skip signup for credentials-based login
-                }
-                try {
-                     //registered user if first time login
-                    const res = await axios.post(`${BACKEND_URL}/auth/signup`, {
-                        id: user.id,
-                        name: user.name,
-                        email: user.email,
-                        authProvider: account?.provider
-                    });
-                    
-                    if (!res.data?.success) {
-                        throw new Error(res.data?.message);
-                    }
-                    return true;
-                } catch (error) {
-                    console.error('Error in signIn callback:', error);
-                    return false;
-                }
-            }
-            return true;
-        },
-        async session({ session, token }): Promise<Session> {
-            if (session?.user && token.email) {
-               // Expose custom token to frontend
-               session.user.id = token.id;
-               session.user.email = token.email;
-               session.user.accessToken = token.customAccessToken as string;
-            }
-            return session;
-        },
-        async redirect({ url, baseUrl }): Promise<string> {
-            return url.startsWith(baseUrl) ? url : `${baseUrl}/dashboard`;
-        },
+        }
+      }
+      return token;
     },
+
+    async session({ session, token }): Promise<Session> {
+      session.user.id = token.id as string;
+      session.user.accessToken = token.accessToken as string;
+      return session;
+    },
+
+    async redirect({ url, baseUrl }): Promise<string> {
+      return url.startsWith(baseUrl) ? url : `${baseUrl}/dashboard`;
+    },
+  },
 };
