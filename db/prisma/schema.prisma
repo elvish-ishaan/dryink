@@ -34,6 +34,7 @@ model Chat {
   chatSession ChatSession @relation(fields: [chatSessionId], references: [id])
   prompt String
   responce String
+  message String?
   genUrl String?
 }
 

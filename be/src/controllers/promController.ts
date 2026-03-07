@@ -26,6 +26,15 @@ interface JobData {
   fps?: number,
 }
 
+function parseStructuredResponse(raw: string, defaultMessage = 'Animation generated!'): { code: string; message: string } {
+  const messageMatch = raw.match(/<MESSAGE>([\s\S]*?)<\/MESSAGE>/);
+  const codeMatch = raw.match(/<CODE>([\s\S]*?)<\/CODE>/);
+  return {
+    message: messageMatch?.[1]?.trim() || defaultMessage,
+    code: codeMatch?.[1]?.trim() ?? '',
+  };
+}
+
 function validateLlmResponse(text: string): boolean {
   return text.includes('setFrame') && text.includes('getTotalFrames');
 }
@@ -55,7 +64,8 @@ export const handlePrompt = async (req: Request, res: Response) => {
     });
     logger.info({ ms: Date.now() - startTime }, 'Response generated');
 
-    const responseText = completion.choices[0].message.content ?? '';
+    const rawResponse = completion.choices[0].message.content ?? '';
+    const { code: responseText, message: llmMessage } = parseStructuredResponse(rawResponse);
 
     if (!validateLlmResponse(responseText)) {
       logger.warn('LLM response failed validation');
@@ -107,6 +117,7 @@ export const handlePrompt = async (req: Request, res: Response) => {
           chatSessionId: chatSession.id,
           prompt,
           responce: responseText,
+          message: llmMessage,
         },
       });
     } catch (error) {
@@ -136,6 +147,7 @@ export const handlePrompt = async (req: Request, res: Response) => {
         jobId: job?.id,
         prompt: prompt,
         genRes: responseText,
+        message: llmMessage,
       },
     });
 
@@ -177,12 +189,13 @@ export const handleFollowUpPrompt = async (req: Request, res: Response) => {
     const followUpCompletion = await openrouter.chat.completions.create({
       model: resolvedModel,
       messages: [
-        { role: 'system', content: newSystemPrompt },
-        { role: 'user', content: modifySketchSystemPrompt + followUprompt + previousGenRes },
+        { role: 'system', content: modifySketchSystemPrompt },
+        { role: 'user', content: `Instruction: ${followUprompt}\n\nExisting code to modify:\n${previousGenRes}` },
       ],
     });
 
-    const followUpResponseText = followUpCompletion.choices[0].message.content ?? '';
+    const rawFollowUpResponse = followUpCompletion.choices[0].message.content ?? '';
+    const { code: followUpResponseText, message: followUpMessage } = parseStructuredResponse(rawFollowUpResponse, 'Animation updated!');
 
     if (!validateLlmResponse(followUpResponseText)) {
       logger.warn('LLM follow-up response failed validation');
@@ -213,6 +226,7 @@ export const handleFollowUpPrompt = async (req: Request, res: Response) => {
         chatSessionId: chatSessionId,
         prompt: followUprompt,
         responce: followUpResponseText,
+        message: followUpMessage,
       },
     });
 
@@ -231,6 +245,7 @@ export const handleFollowUpPrompt = async (req: Request, res: Response) => {
         jobId: job?.id,
         prompt: followUprompt,
         genRes: followUpResponseText,
+        message: followUpMessage,
       },
     });
 

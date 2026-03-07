@@ -16,16 +16,6 @@ export type ErrorState = {
     prompt: string;
 };
 
-interface OnSubmit {
-    success: boolean;
-    data: {
-        chatSessionId: string;
-        signedUrl: string;
-        prompt: string;
-        genRes: string;
-    }
-}
-
 interface OpenRouterModel {
     id: string;
     name: string;
@@ -35,10 +25,11 @@ interface InputCardProps {
     onSubmit: (prompt: string, params: {
         fps: number;
         model: string;
-    }) => Promise<OnSubmit>;
+    }) => Promise<void>;
+    disabled?: boolean;
 }
 
-export default function InputCard({ onSubmit }: InputCardProps) {
+export default function InputCard({ onSubmit, disabled = false }: InputCardProps) {
     const [prompt, setPrompt] = useState('');
     // fpsIndex: 0=Slow(15), 1=Medium(24), 2=Fast(30)
     const [fpsIndex, setFpsIndex] = useState(1);
@@ -206,7 +197,7 @@ export default function InputCard({ onSubmit }: InputCardProps) {
             {/* Generate button fills remaining width */}
             <Button
               onClick={handleSubmit}
-              disabled={loading}
+              disabled={loading || disabled}
               className="flex-1"
             >
               {loading ? (

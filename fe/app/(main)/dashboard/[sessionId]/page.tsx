@@ -10,13 +10,6 @@ import { toast } from 'sonner';
 
 const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL;
 
-interface Chat {
-  id: string;
-  prompt: string;
-  responce: string;
-  genUrl: string | null;
-}
-
 export default function SessionPage() {
   const { data: authSession } = useSession();
   const params = useParams();
@@ -26,15 +19,15 @@ export default function SessionPage() {
   const sessionId = params.sessionId as string;
   const jobIdFromUrl = searchParams.get('jobId');
 
-  const [currentVideoUrl, setCurrentVideoUrl] = useState<string | null>(null);
-  const [currentResponse, setCurrentResponse] = useState<string>('');
-  const [currentPrompt, setCurrentPrompt] = useState<string>('');
-  const [loading, setLoading] = useState(!!jobIdFromUrl);
+  const [messages, setMessages] = useState<ConversationMessage[]>([]);
+  const [videoHistory, setVideoHistory] = useState<VideoEntry[]>([]);
+  const [videoIndex, setVideoIndex] = useState(-1);
+  const [isGenerating, setIsGenerating] = useState(!!jobIdFromUrl);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const pollCountRef = useRef(0);
-  // Keep currentResponse accessible in polling closure without stale closure issues
-  const currentResponseRef = useRef<string>('');
+  // Stores the latest generated p5.js code for follow-up context
+  const currentCodeRef = useRef<string>('');
 
   const fetchSession = async (token: string) => {
     try {
@@ -42,71 +35,94 @@ export default function SessionPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (data.success && data.data.chats.length > 0) {
-        const lastChat: Chat = data.data.chats[data.data.chats.length - 1];
-        setCurrentPrompt(lastChat.prompt);
-        setCurrentResponse(lastChat.responce);
-        currentResponseRef.current = lastChat.responce;
-        if (lastChat.genUrl) {
-          setCurrentVideoUrl(lastChat.genUrl);
-          setLoading(false);
-        }
+
+      if (!data.success) return;
+
+      const chats: Chat[] = data.data.chats;
+
+      // Rebuild conversation messages from DB chats
+      const newMessages: ConversationMessage[] = chats.flatMap((chat) => [
+        {
+          id: `user-${chat.id}`,
+          role: 'user' as const,
+          content: chat.prompt,
+          status: 'sent' as const,
+        },
+        {
+          id: `asst-${chat.id}`,
+          role: 'assistant' as const,
+          content: chat.message || 'Animation generated!',
+          status: 'sent' as const,
+        },
+      ]);
+      setMessages(newMessages);
+
+      // Rebuild video history from chats that have a generated URL
+      const videos: VideoEntry[] = chats
+        .filter((c) => c.genUrl)
+        .map((c) => ({ url: c.genUrl!, prompt: c.prompt }));
+      setVideoHistory(videos);
+      if (videos.length > 0) {
+        setVideoIndex(videos.length - 1);
+      }
+
+      // Keep latest code for follow-up context
+      const lastChat = chats[chats.length - 1];
+      if (lastChat) {
+        currentCodeRef.current = lastChat.responce;
+      }
+
+      // Stop loading if the latest chat already has its video
+      if (lastChat?.genUrl) {
+        setIsGenerating(false);
       }
     } catch (err) {
       console.error('Failed to fetch session:', err);
     }
   };
 
-  const startPolling = (jobId: string, token: string): Promise<void> => {
+  const startPolling = (jobId: string, token: string): void => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
     pollCountRef.current = 0;
 
-    return new Promise((resolve, reject) => {
-      intervalRef.current = setInterval(async () => {
-        pollCountRef.current += 1;
+    intervalRef.current = setInterval(async () => {
+      pollCountRef.current += 1;
 
-        if (pollCountRef.current >= 100) {
+      if (pollCountRef.current >= 100) {
+        clearInterval(intervalRef.current!);
+        intervalRef.current = null;
+        setIsGenerating(false);
+        toast.error('Generation timed out');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${BACKEND_BASE_URL}/prompt/${jobId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+
+        if (!data.success) return; // still pending
+
+        if (data.data?.status === 'completed') {
           clearInterval(intervalRef.current!);
           intervalRef.current = null;
-          setLoading(false);
-          toast.error('Generation timed out');
-          reject(new Error('timeout'));
-          return;
+          // Fetch updated session to get latest genUrl + sync everything
+          await fetchSession(token);
+          router.replace(`/dashboard/${sessionId}`, { scroll: false });
+        } else if (data.data?.status === 'failed') {
+          clearInterval(intervalRef.current!);
+          intervalRef.current = null;
+          setIsGenerating(false);
+          toast.error('Video generation failed');
         }
-
-        try {
-          const res = await fetch(`${BACKEND_BASE_URL}/prompt/${jobId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const data = await res.json();
-
-          if (!data.success) return; // still pending
-
-          if (data.data?.status === 'completed') {
-            clearInterval(intervalRef.current!);
-            intervalRef.current = null;
-            setCurrentVideoUrl(data.data.genUrl);
-            setLoading(false);
-            // Fetch updated session to get latest responce for follow-ups
-            await fetchSession(token);
-            // Remove jobId from URL without a full navigation
-            router.replace(`/dashboard/${sessionId}`, { scroll: false });
-            resolve();
-          } else if (data.data?.status === 'failed') {
-            clearInterval(intervalRef.current!);
-            intervalRef.current = null;
-            setLoading(false);
-            toast.error('Video generation failed');
-            reject(new Error('failed'));
-          }
-        } catch (err) {
-          console.error('Polling error:', err);
-        }
-      }, 3000);
-    });
+      } catch (err) {
+        console.error('Polling error:', err);
+      }
+    }, 3000);
   };
 
   useEffect(() => {
@@ -116,7 +132,7 @@ export default function SessionPage() {
     fetchSession(token);
 
     if (jobIdFromUrl) {
-      setLoading(true);
+      setIsGenerating(true);
       startPolling(jobIdFromUrl, token);
     }
 
@@ -132,10 +148,18 @@ export default function SessionPage() {
   const handlePromptSubmit = async (
     prompt: string,
     params: { fps: number; model: string }
-  ) => {
-    setLoading(true);
+  ): Promise<void> => {
     const token = authSession?.user?.accessToken;
     if (!token) return;
+
+    const tempAsstId = `asst-temp-${Date.now()}`;
+
+    // Optimistically add user message + pending assistant bubble
+    setMessages((prev) => [
+      ...prev,
+      { id: `user-temp-${Date.now()}`, role: 'user', content: prompt, status: 'sent' },
+      { id: tempAsstId, role: 'assistant', content: '', status: 'pending' },
+    ]);
 
     try {
       const response = await fetch(`${BACKEND_BASE_URL}/prompt/followUpPrompt`, {
@@ -147,7 +171,7 @@ export default function SessionPage() {
         body: JSON.stringify({
           chatSessionId: sessionId,
           followUprompt: prompt,
-          previousGenRes: currentResponseRef.current,
+          previousGenRes: currentCodeRef.current,
           ...params,
         }),
       });
@@ -156,22 +180,37 @@ export default function SessionPage() {
 
       if (!data.success) {
         toast.error(data.message);
-        setLoading(false);
+        setMessages((prev) =>
+          prev.map((m) => (m.id === tempAsstId ? { ...m, status: 'failed' } : m))
+        );
         return;
       }
 
-      setCurrentPrompt(prompt);
-      setCurrentVideoUrl(null);
+      // Show LLM's conversational reply immediately
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === tempAsstId
+            ? {
+                ...m,
+                content: data.data.message || 'Animation is being generated!',
+                status: 'sent',
+              }
+            : m
+        )
+      );
 
-      if (data.data?.jobId) {
-        await startPolling(data.data.jobId, token);
-      }
+      setIsGenerating(true);
+      startPolling(data.data.jobId, token);
     } catch (err) {
       console.error('Submit error:', err);
       toast.error('Failed to generate video');
-      setLoading(false);
+      setMessages((prev) =>
+        prev.map((m) => (m.id === tempAsstId ? { ...m, status: 'failed' } : m))
+      );
     }
   };
+
+  const currentVideo = videoHistory[videoIndex] ?? null;
 
   return (
     <div className="flex h-screen bg-neutral-950 text-white">
@@ -182,19 +221,23 @@ export default function SessionPage() {
       <div className="flex-1 flex bg-neutral-900">
         <div className="w-3/5">
           <VideoGenerationCard
-            currentVideoUrl={currentVideoUrl}
-            currentResponse={currentResponse}
-            prompt={currentPrompt}
-            onUndo={() => {}}
-            onRedo={() => {}}
-            canUndo={false}
-            canRedo={false}
-            loading={loading}
+            currentVideoUrl={currentVideo?.url ?? null}
+            currentResponse=""
+            prompt={currentVideo?.prompt ?? ''}
+            onUndo={() => setVideoIndex((i) => i - 1)}
+            onRedo={() => setVideoIndex((i) => i + 1)}
+            canUndo={videoIndex > 0}
+            canRedo={videoIndex < videoHistory.length - 1}
+            loading={isGenerating}
           />
         </div>
 
         <div className="w-2/5 border-l border-neutral-800 h-full">
-          <PromptCard onSubmit={handlePromptSubmit} />
+          <PromptCard
+            messages={messages}
+            onSubmit={handlePromptSubmit}
+            isGenerating={isGenerating}
+          />
         </div>
       </div>
     </div>

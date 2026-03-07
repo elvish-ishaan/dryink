@@ -1,4 +1,4 @@
-import { Download } from "lucide-react";
+import { Download, Undo2, Redo2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { useRef } from "react";
@@ -19,10 +19,10 @@ interface VideoGenerationCardProps {
 export default function VideoGenerationCard({
     currentVideoUrl,
     prompt,
-    //onUndo,
-    //onRedo,
-    //canUndo,
-    //canRedo,
+    onUndo,
+    onRedo,
+    canUndo,
+    canRedo,
     loading
 }: VideoGenerationCardProps) {
     const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -35,16 +35,16 @@ export default function VideoGenerationCard({
         a.click();
     };
 
-
     return (
         <Card className="flex bg-neutral-800 rounded-none flex-col h-full">
             <CardContent className="flex flex-col w-full h-full p-2 items-center justify-center">
                 {loading ? (
-                    <div className=" flex flex-col gap-10 items-center">
-                        <Loader/>
-                        <span className="text-neutral-300 font-semibold">Hold on!, Your video is being generated...</span>
+                    <div className="flex flex-col gap-10 items-center">
+                        <Loader />
+                        <span className="text-neutral-300 font-semibold">
+                            Hold on! Your video is being generated...
+                        </span>
                     </div>
-                    // <Skeleton className="w-full max-w-3xl aspect-video" />
                 ) : currentVideoUrl ? (
                     <>
                         <div className="w-full max-w-3xl">
@@ -65,32 +65,32 @@ export default function VideoGenerationCard({
                                 }}
                             />
                         </div>
-                        <div className="flex gap-1 w-full max-w-3xl justify-center mt-1">
-                            {/* <Button 
-                                onClick={onUndo} 
-                                variant="outline" 
+
+                        <div className="flex gap-2 w-full max-w-3xl justify-center mt-2">
+                            <Button
+                                onClick={onUndo}
+                                variant="outline"
                                 size="sm"
                                 disabled={!canUndo}
-                                className={!canUndo ? "opacity-50" : ""}
                             >
                                 <Undo2 className="w-4 h-4 mr-1" />
-                                Undo
-                            </Button> */}
+                                Previous
+                            </Button>
                             <Button onClick={handleDownload} variant="outline" size="sm">
                                 <Download className="w-4 h-4 mr-1" />
                                 Download
                             </Button>
-                            {/* <Button 
-                                onClick={onRedo} 
-                                variant="outline" 
+                            <Button
+                                onClick={onRedo}
+                                variant="outline"
                                 size="sm"
                                 disabled={!canRedo}
-                                className={ !canRedo ? "opacity-50 hidden" : " hidden"}
                             >
                                 <Redo2 className="w-4 h-4 mr-1" />
-                                Redo
-                            </Button> */}
+                                Next
+                            </Button>
                         </div>
+
                         <div className="text-xs text-muted-foreground text-center mt-1 max-w-3xl">
                             {prompt}
                         </div>

@@ -11,14 +11,21 @@ const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL;
 
 const Page = () => {
   const { data: session } = useSession();
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handlePromptSubmit = async (prompt: string, params: {
-    fps: number;
-    model: string;
-  }) => {
-    setLoading(true);
+  const [messages, setMessages] = useState<ConversationMessage[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handlePromptSubmit = async (prompt: string, params: { fps: number; model: string }) => {
+    const tempAsstId = `asst-temp-${Date.now()}`;
+
+    setMessages((prev) => [
+      ...prev,
+      { id: `user-${Date.now()}`, role: 'user', content: prompt, status: 'sent' },
+      { id: tempAsstId, role: 'assistant', content: '', status: 'pending' },
+    ]);
+    setIsGenerating(true);
+
     try {
       const response = await fetch(`${BACKEND_BASE_URL}/prompt`, {
         method: 'POST',
@@ -33,16 +40,29 @@ const Page = () => {
 
       if (!data.success) {
         toast.error(data.message);
-        setLoading(false);
+        setMessages((prev) =>
+          prev.map((m) => (m.id === tempAsstId ? { ...m, status: 'failed' } : m))
+        );
+        setIsGenerating(false);
         return;
       }
 
-      // Redirect to the session page; jobId in URL allows polling to resume on refresh
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === tempAsstId
+            ? { ...m, content: data.data.message || 'Animation is being generated!', status: 'sent' }
+            : m
+        )
+      );
+
       router.push(`/dashboard/${data.data.chatSessionId}?jobId=${data.data.jobId}`);
     } catch (err) {
       console.error('Submit error:', err);
       toast.error('Failed to generate video');
-      setLoading(false);
+      setMessages((prev) =>
+        prev.map((m) => (m.id === tempAsstId ? { ...m, status: 'failed' } : m))
+      );
+      setIsGenerating(false);
     }
   };
 
@@ -54,10 +74,6 @@ const Page = () => {
 
       <div className="flex-1 flex bg-neutral-900">
         <div className="w-3/5 border-neutral-800 h-full">
-          <PromptCard onSubmit={handlePromptSubmit} />
-        </div>
-
-        <div className="w-2/5">
           <VideoGenerationCard
             currentVideoUrl={null}
             currentResponse=""
@@ -66,7 +82,15 @@ const Page = () => {
             onRedo={() => {}}
             canUndo={false}
             canRedo={false}
-            loading={loading}
+            loading={isGenerating}
+          />
+        </div>
+
+        <div className="w-2/5 border-l border-neutral-800 h-full">
+          <PromptCard
+            messages={messages}
+            onSubmit={handlePromptSubmit}
+            isGenerating={isGenerating}
           />
         </div>
       </div>
