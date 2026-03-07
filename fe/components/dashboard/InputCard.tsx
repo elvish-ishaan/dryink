@@ -29,6 +29,21 @@ interface InputCardProps {
     disabled?: boolean;
 }
 
+function ModelOption({ m, selected, onSelect }: { m: OpenRouterModel; selected: boolean; onSelect: (m: OpenRouterModel) => void }) {
+    return (
+        <div
+            onMouseDown={(e) => { e.preventDefault(); onSelect(m); }}
+            className={cn(
+                "px-3 py-2 cursor-pointer text-xs hover:bg-neutral-700 transition-colors",
+                selected && "bg-neutral-700 text-white font-medium"
+            )}
+        >
+            <p className="truncate font-medium">{m.name}</p>
+            <p className="truncate text-neutral-500">{m.id}</p>
+        </div>
+    );
+}
+
 export default function InputCard({ onSubmit, disabled = false }: InputCardProps) {
     const [prompt, setPrompt] = useState('');
     // fpsIndex: 0=Slow(15), 1=Medium(24), 2=Fast(30)
@@ -36,7 +51,9 @@ export default function InputCard({ onSubmit, disabled = false }: InputCardProps
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState<ErrorState>({ prompt: '' });
 
-    const [model, setModel] = useState<string>('');
+    const DEFAULT_MODEL = 'arcee-ai/trinity-large-preview:free';
+
+    const [model, setModel] = useState<string>(DEFAULT_MODEL);
     const [modelQuery, setModelQuery] = useState('');
     const [models, setModels] = useState<OpenRouterModel[]>([]);
     const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -68,10 +85,24 @@ export default function InputCard({ onSubmit, disabled = false }: InputCardProps
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const filteredModels = models.filter(m =>
-        m.id.toLowerCase().includes(modelQuery.toLowerCase()) ||
-        m.name.toLowerCase().includes(modelQuery.toLowerCase())
-    ).slice(0, 40);
+    const FEATURED_PREFIXES = ['anthropic/', 'openai/', 'google/'];
+
+    const featuredModels = models.filter(m =>
+        FEATURED_PREFIXES.some(prefix => m.id.startsWith(prefix))
+    );
+
+    const otherModels = models.filter(m =>
+        !FEATURED_PREFIXES.some(prefix => m.id.startsWith(prefix))
+    );
+
+    const isSearching = modelQuery.trim().length > 0;
+
+    const filteredModels = isSearching
+        ? models.filter(m =>
+            m.id.toLowerCase().includes(modelQuery.toLowerCase()) ||
+            m.name.toLowerCase().includes(modelQuery.toLowerCase())
+          ).slice(0, 40)
+        : null;
 
     const handleModelSelect = (m: OpenRouterModel) => {
         setModel(m.id);
@@ -151,7 +182,7 @@ export default function InputCard({ onSubmit, disabled = false }: InputCardProps
                 className="flex items-center gap-1.5 px-3 h-9 rounded-md bg-neutral-700 hover:bg-neutral-600 text-xs text-neutral-200 border border-neutral-600 transition-colors"
               >
                 <span className="max-w-[160px] truncate">
-                  {model ? model.split('/').pop() : 'Select model'}
+                  {model ? model.split('/').pop()?.replace(':free', '') : 'Select model'}
                 </span>
                 <ChevronDown className={cn("h-3 w-3 flex-shrink-0 transition-transform", dropdownOpen && "rotate-180")} />
               </button>
@@ -171,23 +202,33 @@ export default function InputCard({ onSubmit, disabled = false }: InputCardProps
                   </div>
                   {/* Model list */}
                   <div className="max-h-52 overflow-y-auto">
-                    {filteredModels.length === 0 ? (
-                      <p className="px-3 py-4 text-xs text-neutral-500 text-center">
-                        {models.length === 0 ? 'Loading...' : 'No models found'}
-                      </p>
+                    {models.length === 0 ? (
+                      <p className="px-3 py-4 text-xs text-neutral-500 text-center">Loading...</p>
+                    ) : isSearching ? (
+                      filteredModels!.length === 0 ? (
+                        <p className="px-3 py-4 text-xs text-neutral-500 text-center">No models found</p>
+                      ) : (
+                        filteredModels!.map(m => (
+                          <ModelOption key={m.id} m={m} selected={model === m.id} onSelect={handleModelSelect} />
+                        ))
+                      )
                     ) : (
-                      filteredModels.map(m => (
-                        <div
-                          key={m.id}
-                          onMouseDown={(e) => { e.preventDefault(); handleModelSelect(m); }}
-                          className={cn(
-                            "px-3 py-2 cursor-pointer text-sm hover:bg-neutral-700 transition-colors",
-                            model === m.id && "bg-neutral-700 text-white font-medium"
-                          )}
-                        >
-                          {m.name}
-                        </div>
-                      ))
+                      <>
+                        {/* Popular section */}
+                        <p className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-500">Popular</p>
+                        {featuredModels.map(m => (
+                          <ModelOption key={m.id} m={m} selected={model === m.id} onSelect={handleModelSelect} />
+                        ))}
+                        {otherModels.length > 0 && (
+                          <>
+                            <div className="border-t border-neutral-700 my-1" />
+                            <p className="px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-500">All Models</p>
+                            {otherModels.slice(0, 40).map(m => (
+                              <ModelOption key={m.id} m={m} selected={model === m.id} onSelect={handleModelSelect} />
+                            ))}
+                          </>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { LogOut, Plus, Trash2 } from "lucide-react";
+import { LogOut, Plus, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { AvatarFallback, AvatarImage, Avatar } from "../ui/avatar";
@@ -38,6 +38,7 @@ export default function Sidebar() {
   const [loading, setLoading] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
+  const [collapsed, setCollapsed] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -106,7 +107,15 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="h-full bg-neutral-800 border-r border-neutral-800 flex flex-col md:min-w-64">
+    <aside className={`relative h-full bg-neutral-800 border-r border-neutral-700 flex flex-col transition-all duration-300 ${collapsed ? "w-14" : "md:min-w-64"}`}>
+      {/* Toggle Button */}
+      <button
+        onClick={() => setCollapsed(!collapsed)}
+        className="absolute -right-3 top-4 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-neutral-600 hover:bg-neutral-500 border border-neutral-500 text-neutral-200 transition-colors"
+      >
+        {collapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
+      </button>
+
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent className=" bg-neutral-800">
@@ -129,72 +138,102 @@ export default function Sidebar() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {/* Sessions */}
-      <div className="flex-1 w-[10] overflow-y-auto p-4 space-y-2">
-        <h3 className="text-sm font-semibold p-2 text-neutral-300">Sessions</h3>
-        <Button className=" w-full"
-        onClick={() => router.push("/dashboard")}
-        ><span><Plus className=" text-black font-bold"/></span>New Chat</Button>
-        {loading ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="scale-75">
-              <DashLoader />
-            </div>
-          </div>
-        ) : chatSessions.length > 0 ? (
-          chatSessions.map((session) => (
-            <Link
-              key={session.id}
-              href={`/dashboard/${session.id}`}
-              className="flex items-center justify-between px-2 py-1 max-w-full rounded-md bg-neutral-700 hover:bg-neutral-600 transition-colors"
-            >
-              <div className="flex-1 min-w-0">
-                <p className="text-sm truncate">
-                  {session.chats[0]?.prompt.slice(0, 20)+ "..."}
-                </p>
-                
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={(e) => handleDeleteSessionClick(session.id, e)}
-              >
-                <Trash2 className=" text-red-400 h-4 w-4" />
-              </Button>
-            </Link>
-          ))
-        ) : (
-          <p className="text-sm text-neutral-400">No sessions found.</p>
-        )}
-      </div>
 
-      {/* User Info */}
-      <div className="p-1 px-2 border-b border-neutral-800">
-        <div className="flex items-center space-x-3">
-          <Avatar>
+      {collapsed ? (
+        /* Collapsed view */
+        <div className="flex flex-col items-center flex-1 py-4 gap-3">
+          <Button
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => router.push("/dashboard")}
+          >
+            <Plus className="h-4 w-4 text-black font-bold" />
+          </Button>
+          <div className="flex-1" />
+          <Avatar className="h-8 w-8">
             <AvatarImage src={session?.user?.image || ""} />
-            <AvatarFallback>
+            <AvatarFallback className="text-xs">
               {session?.user?.name?.charAt(0) || "U"}
             </AvatarFallback>
           </Avatar>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">{session?.user?.name || "User"}</p>
-            <p className="text-xs text-muted-foreground truncate">{session?.user?.email}</p>
-          </div>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8 text-neutral-200 hover:bg-neutral-700"
+            onClick={handleSignOut}
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
         </div>
-      </div>
+      ) : (
+        <>
+          {/* Sessions */}
+          <div className="flex-1 w-[10] overflow-y-auto p-4 space-y-2">
+            <h3 className="text-sm font-semibold p-2 text-neutral-300">Sessions</h3>
+            <Button className=" w-full"
+            onClick={() => router.push("/dashboard")}
+            ><span><Plus className=" text-black font-bold"/></span>New Chat</Button>
+            {loading ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="scale-75">
+                  <DashLoader />
+                </div>
+              </div>
+            ) : chatSessions.length > 0 ? (
+              chatSessions.map((session) => (
+                <Link
+                  key={session.id}
+                  href={`/dashboard/${session.id}`}
+                  className="flex items-center justify-between px-2 py-1 max-w-full rounded-md bg-neutral-700 hover:bg-neutral-600 transition-colors"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm truncate">
+                      {session.chats[0]?.prompt.slice(0, 20)+ "..."}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={(e) => handleDeleteSessionClick(session.id, e)}
+                  >
+                    <Trash2 className=" text-red-400 h-4 w-4" />
+                  </Button>
+                </Link>
+              ))
+            ) : (
+              <p className="text-sm text-neutral-400">No sessions found.</p>
+            )}
+          </div>
 
-      {/* Sign Out */}
-      <div className="p-2 flex justify-center border-t border-neutral-800">
-        <Button
-          className=" w-full  text-neutral-200 border border-neutral-700 bg-neutral-800 hover:bg-neutral-900"
-          onClick={handleSignOut}
-        >
-          <LogOut className="h-4 w-4 mr-2" />
-          Sign Out
-        </Button>
-      </div>
+          {/* User Info */}
+          <div className="p-1 px-2 border-b border-neutral-800">
+            <div className="flex items-center space-x-3">
+              <Avatar>
+                <AvatarImage src={session?.user?.image || ""} />
+                <AvatarFallback>
+                  {session?.user?.name?.charAt(0) || "U"}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{session?.user?.name || "User"}</p>
+                <p className="text-xs text-muted-foreground truncate">{session?.user?.email}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Sign Out */}
+          <div className="p-2 flex justify-center border-t border-neutral-800">
+            <Button
+              className=" w-full  text-neutral-200 border border-neutral-700 bg-neutral-800 hover:bg-neutral-900"
+              onClick={handleSignOut}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
+          </div>
+        </>
+      )}
     </aside>
   );
 }
