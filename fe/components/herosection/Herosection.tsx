@@ -73,6 +73,21 @@ const HeroSection = () => {
       <div className="absolute inset-0 flex items-center justify-center z-0 pointer-events-none">
         <div className="w-[550px] h-[550px] bg-[#4a3294] rounded-full blur-[60px] opacity-90 mb-20 hidden dark:block" />
       </div>
+      {/* Diagonal Cross Grid Overlay */}
+      <div
+        className="absolute inset-0 z-0 pointer-events-none opacity-30"
+        style={{
+          backgroundImage: `
+            linear-gradient(45deg, transparent 49%, #d1d5db 49%, #d1d5db 51%, transparent 51%),
+            linear-gradient(-45deg, transparent 49%, #d1d5db 49%, #d1d5db 51%, transparent 51%)
+          `,
+          backgroundSize: "40px 40px",
+          WebkitMaskImage:
+            "radial-gradient(ellipse 100% 32% at 50% 100%, #000 30%, transparent 80%)",
+          maskImage:
+            "radial-gradient(ellipse 100% 32% at 50% 100%, #000 30%, transparent 80%)",
+        }}
+      />
 
       <div className="max-w-4xl w-full text-center relative z-10 mt-10">
         <NotBacked
