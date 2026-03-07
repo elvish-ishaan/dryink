@@ -1,13 +1,18 @@
 "use client";
-import React, { useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useAnimate, stagger } from "motion/react";
+import { useSession } from "next-auth/react";
+import { ArrowRight } from "lucide-react";
 import NotBacked from "./NotBacked";
 
 const HeroSection = () => {
   const [scope, animate] = useAnimate();
   const router = useRouter();
+  const { data: session } = useSession();
+  const [prompt, setPrompt] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     const startAnimating = async () => {
@@ -44,6 +49,19 @@ const HeroSection = () => {
   startAnimating();
 }, [animate]);
 
+  const handleSubmit = () => {
+    const trimmed = prompt.trim();
+    if (!trimmed) {
+      textareaRef.current?.focus();
+      return;
+    }
+    sessionStorage.setItem("pendingPrompt", trimmed);
+    if (session?.user) {
+      router.push("/dashboard");
+    } else {
+      router.push("/login");
+    }
+  };
 
   return (
     <section
@@ -56,7 +74,7 @@ const HeroSection = () => {
         <div className="w-[550px] h-[550px] bg-[#4a3294] rounded-full blur-[60px] opacity-90 mb-20 hidden dark:block" />
       </div>
 
-      <div className="max-w-4xl text-center relative z-10 mt-10">
+      <div className="max-w-4xl w-full text-center relative z-10 mt-10">
         <NotBacked
             className="animate-button "
             style={{ opacity: 0, filter: "blur(4px)", transform: "translateY(20px) " }}
@@ -81,21 +99,36 @@ const HeroSection = () => {
           Easily turn lessons into engaging, animated videos. Dryink helps you simplify complex ideas through dynamic visuals — no animation skills needed.
         </p>
 
-        {/* Animated Button + NotBacked Together */}
-        <div className="space-y-4 flex flex-col items-center justify-center flex-wrap">
-          <Button
-            onClick={() => router.push("/dashboard")}
-            className="animate-button w-fit cursor-pointer bg-gradient-to-r from-violet-500
-             to-purple-500 hover:bg-purple-700 text-white px-12 py-6 rounded-full text-sm 
-             font-semibold focus:outline-none focus-visible:ring-4 focus-visible:ring-purple-400
-             border border-neutral-200 dark:border-neutral-600
-            backdrop-blur-lg"
-            aria-label="Get started with Dryink"
-            style={{ opacity: 0, filter: "blur(4px)", transform: "translateY(20px) " }}
-          >
-            Get started
-          </Button>
-
+        {/* Prompt Input */}
+        <div
+          className="animate-button max-w-2xl mx-auto"
+          style={{ opacity: 0, filter: "blur(4px)", transform: "translateY(20px)" }}
+        >
+          <div className="relative flex items-end gap-3 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-2xl p-4 shadow-xl">
+            <textarea
+              ref={textareaRef}
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmit();
+                }
+              }}
+              placeholder="Explain the Pythagorean theorem with an animated triangle..."
+              rows={4}
+              className="flex-1 resize-none bg-transparent border-0 outline-none text-base text-neutral-800 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 leading-relaxed"
+            />
+            <Button
+              onClick={handleSubmit}
+              disabled={!prompt.trim()}
+              className="shrink-0 rounded-xl bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white h-12 w-12 p-0 disabled:opacity-40"
+              aria-label="Generate animation"
+            >
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
+          <p className="text-xs text-neutral-400 mt-2">Press Enter to generate · Shift+Enter for new line</p>
         </div>
       </div>
     </section>

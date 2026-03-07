@@ -178,6 +178,17 @@ export default function SessionPage() {
 
       const data = await response.json();
 
+      if (response.status === 402 || data.code === 'INSUFFICIENT_CREDITS') {
+        toast.error("You've run out of credits!", {
+          action: { label: 'Buy Credits', onClick: () => router.push('/pricing') },
+          duration: 6000,
+        });
+        setMessages((prev) =>
+          prev.map((m) => (m.id === tempAsstId ? { ...m, status: 'failed' } : m))
+        );
+        return;
+      }
+
       if (!data.success) {
         toast.error(data.message);
         setMessages((prev) =>

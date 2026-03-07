@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { LogOut, Plus, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { LogOut, Plus, Trash2, ChevronLeft, ChevronRight, Coins } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { AvatarFallback, AvatarImage, Avatar } from "../ui/avatar";
@@ -18,6 +18,7 @@ import {
   DialogClose,
 } from "../ui/dialog";
 import { useRouter } from "next/navigation";
+import { useCredits } from "@/contexts/CreditsContext";
 
 interface ChatSession {
   id: string;
@@ -40,6 +41,7 @@ export default function Sidebar() {
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(false);
   const router = useRouter();
+  const { credits } = useCredits();
 
   useEffect(() => {
     const fetchSessions = async () => {
@@ -218,6 +220,13 @@ export default function Sidebar() {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{session?.user?.name || "User"}</p>
                 <p className="text-xs text-muted-foreground truncate">{session?.user?.email}</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <Coins className="h-3 w-3 text-purple-400" />
+                  <span className="text-xs text-purple-400 font-medium">{credits} credits</span>
+                  <Link href="/pricing" className="text-xs text-neutral-400 underline hover:text-white ml-1">
+                    Buy more
+                  </Link>
+                </div>
               </div>
             </div>
           </div>

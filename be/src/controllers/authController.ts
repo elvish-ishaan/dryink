@@ -74,6 +74,7 @@ export const handleSignUp = async (req: Request, res: Response) => {
             name,
             email,
             authProvider: authProvider === "google" ? AuthProvider.GOOGLE : AuthProvider.GITHUB,
+            credits: 5,
           },
         });
       }
@@ -96,6 +97,7 @@ export const handleSignUp = async (req: Request, res: Response) => {
         email,
         password: await bcrypt.hash(password, 10),
         authProvider: AuthProvider.CREDENTIALS,
+        credits: 5,
       },
     });
 

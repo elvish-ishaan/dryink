@@ -10,14 +10,30 @@ datasource db {
 
 
 model User {
-  id  String @default(uuid()) @id 
+  id  String @default(uuid()) @id
   email String @unique
   password String?
   name String?
-  authProvider  String?  
+  authProvider  String?
   chatSessions ChatSession[]
   createdOn  DateTime @default(now())
   userJobs Job[]
+  credits      Int           @default(0)
+  transactions Transaction[]
+}
+
+model Transaction {
+  id                 String   @default(uuid()) @id
+  userId             String
+  user               User     @relation(fields: [userId], references: [id])
+  razorpayOrderId    String   @unique
+  razorpayPaymentId  String?
+  razorpaySignature  String?
+  credits            Int
+  amountUSD          Float
+  status             String
+  createdOn          DateTime @default(now())
+  updatedOn          DateTime @updatedAt
 }
 
 model ChatSession {

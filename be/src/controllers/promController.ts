@@ -7,10 +7,16 @@ import prisma from "../client/prismaClient";
 import OpenAI from "openai";
 import { logger } from "../lib/logger";
 
-const openrouter = new OpenAI({
-  baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.OPENROUTER_API_KEY!,
-});
+let _openrouter: OpenAI | null = null;
+function getOpenRouter(): OpenAI {
+  if (!_openrouter) {
+    _openrouter = new OpenAI({
+      baseURL: 'https://openrouter.ai/api/v1',
+      apiKey: process.env.OPENROUTER_API_KEY!,
+    });
+  }
+  return _openrouter;
+}
 
 enum JobStatus {
   PENDING = "pending",
@@ -53,9 +59,23 @@ export const handlePrompt = async (req: Request, res: Response) => {
       return;
     }
 
+    // Credit check
+    const userCredits = await prisma.user.findUnique({
+      where: { id: req.user?.id },
+      select: { credits: true },
+    });
+    if (!userCredits || userCredits.credits <= 0) {
+      res.status(402).json({
+        success: false,
+        message: 'Insufficient credits. Please purchase more to continue.',
+        code: 'INSUFFICIENT_CREDITS',
+      });
+      return;
+    }
+
     logger.info('Generating main response from code gen model');
     const startTime = Date.now();
-    const completion = await openrouter.chat.completions.create({
+    const completion = await getOpenRouter().chat.completions.create({
       model: resolvedModel,
       messages: [
         { role: 'system', content: newSystemPrompt },
@@ -76,13 +96,16 @@ export const handlePrompt = async (req: Request, res: Response) => {
       return;
     }
 
-    // Init a job for user
-    const job = await prisma.job.create({
-      data: {
-        userId: req.user?.id,
-        status: JobStatus.PENDING,
-      }
-    });
+    // Init a job and deduct credit atomically
+    const [job] = await prisma.$transaction([
+      prisma.job.create({
+        data: { userId: req.user?.id, status: JobStatus.PENDING },
+      }),
+      prisma.user.update({
+        where: { id: req.user?.id },
+        data: { credits: { decrement: 1 } },
+      }),
+    ]);
 
     if (!job) {
       res.status(500).json({
@@ -186,7 +209,21 @@ export const handleFollowUpPrompt = async (req: Request, res: Response) => {
       return;
     }
 
-    const followUpCompletion = await openrouter.chat.completions.create({
+    // Credit check
+    const userCredits = await prisma.user.findUnique({
+      where: { id: req.user?.id },
+      select: { credits: true },
+    });
+    if (!userCredits || userCredits.credits <= 0) {
+      res.status(402).json({
+        success: false,
+        message: 'Insufficient credits. Please purchase more to continue.',
+        code: 'INSUFFICIENT_CREDITS',
+      });
+      return;
+    }
+
+    const followUpCompletion = await getOpenRouter().chat.completions.create({
       model: resolvedModel,
       messages: [
         { role: 'system', content: modifySketchSystemPrompt },
@@ -206,12 +243,15 @@ export const handleFollowUpPrompt = async (req: Request, res: Response) => {
       return;
     }
 
-    const job = await prisma.job.create({
-      data: {
-        userId: req.user?.id,
-        status: JobStatus.PENDING,
-      }
-    });
+    const [job] = await prisma.$transaction([
+      prisma.job.create({
+        data: { userId: req.user?.id, status: JobStatus.PENDING },
+      }),
+      prisma.user.update({
+        where: { id: req.user?.id },
+        data: { credits: { decrement: 1 } },
+      }),
+    ]);
 
     if (!job) {
       res.status(500).json({

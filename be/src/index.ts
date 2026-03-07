@@ -7,6 +7,8 @@ import promptRoute from './routes/prompt';
 import editorRoute from './routes/editor';
 import authRoute from './routes/auth';
 import sessionRoute from './routes/session';
+import paymentRoute from './routes/payment';
+import contactRoute from './routes/contact';
 
 dotenv.config();
 
@@ -25,6 +27,8 @@ app.use('/api/v1/prompt', promptRoute);
 app.use('/api/v1/editor', editorRoute);
 app.use('/api/v1/auth', authRoute);
 app.use('/api/v1/sessions', sessionRoute);
+app.use('/api/v1/payment', paymentRoute);
+app.use('/api/v1/contact', contactRoute);
 
 app.get("/", (req, res) => {
   res.json({

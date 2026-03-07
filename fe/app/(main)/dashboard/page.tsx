@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Sidebar from '@/components/dashboard/Sidebar';
 import PromptCard from '@/components/dashboard/PromptCard';
 import VideoGenerationCard from '@/components/dashboard/VideoGenerationCard';
@@ -8,6 +8,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
 const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL;
+const DEFAULT_MODEL = 'arcee-ai/trinity-large-preview:free';
 
 const Page = () => {
   const { data: session } = useSession();
@@ -15,6 +16,7 @@ const Page = () => {
 
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const autoSubmittedRef = useRef(false);
 
   const handlePromptSubmit = async (prompt: string, params: { fps: number; model: string }) => {
     const tempAsstId = `asst-temp-${Date.now()}`;
@@ -37,6 +39,18 @@ const Page = () => {
       });
 
       const data = await response.json();
+
+      if (response.status === 402 || data.code === 'INSUFFICIENT_CREDITS') {
+        toast.error("You've run out of credits!", {
+          action: { label: 'Buy Credits', onClick: () => router.push('/pricing') },
+          duration: 6000,
+        });
+        setMessages((prev) =>
+          prev.map((m) => (m.id === tempAsstId ? { ...m, status: 'failed' } : m))
+        );
+        setIsGenerating(false);
+        return;
+      }
 
       if (!data.success) {
         toast.error(data.message);
@@ -65,6 +79,20 @@ const Page = () => {
       setIsGenerating(false);
     }
   };
+
+  // Auto-submit pending prompt from landing page
+  useEffect(() => {
+    const token = session?.user?.accessToken;
+    if (!token || autoSubmittedRef.current) return;
+
+    const pendingPrompt = sessionStorage.getItem('pendingPrompt');
+    if (!pendingPrompt) return;
+
+    autoSubmittedRef.current = true;
+    sessionStorage.removeItem('pendingPrompt');
+    handlePromptSubmit(pendingPrompt, { fps: 24, model: DEFAULT_MODEL });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.accessToken]);
 
   return (
     <div className="flex h-screen bg-neutral-950 text-white">
