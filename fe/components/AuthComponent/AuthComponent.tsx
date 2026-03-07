@@ -19,7 +19,9 @@ export default function AuthPage({ type = "login" }) {
   const [name, setName] = useState<string>("");
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
+  const [credentialsLoading, setCredentialsLoading] = useState<boolean>(false);
+  const [githubLoading, setGithubLoading] = useState<boolean>(false);
+  const [googleLoading, setGoogleLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter()
   // const avatarConfig = useMemo(() => genConfig(), [])
@@ -34,7 +36,7 @@ export default function AuthPage({ type = "login" }) {
   }
 
   const handleGithubLogin = async () => {
-    setLoading(true);
+    setGithubLoading(true);
     setError(null);
     try {
       await signIn("github", { callbackUrl: '/dashboard', redirect: false});
@@ -42,12 +44,12 @@ export default function AuthPage({ type = "login" }) {
       console.log(err,'err in signing with github')
       setError("Failed to sign in with GitHub.");
     } finally {
-      setLoading(false);
+      setGithubLoading(false);
     }
   };
 
   const handleGoogleLogin = async () => {
-    setLoading(true);
+    setGoogleLoading(true);
     setError(null);
     try {
        await signIn("google", { callbackUrl: '/dashboard', redirect: false});
@@ -55,18 +57,18 @@ export default function AuthPage({ type = "login" }) {
       console.log(err,'err in signing with google')
       setError("Failed to sign in with Google.");
     } finally {
-      setLoading(false);
+      setGoogleLoading(false);
     }
   };
 
   const handleCredentialsAuth = async (authType: AuthType) => {
-    setLoading(true);
+    setCredentialsLoading(true);
     setError(null);
     if(authType === 'login'){
       try {
        const signinRes = await signIn('credentials', { email, password, redirect: false });
-       setLoading(false)
-       
+       setCredentialsLoading(false)
+
        if( signinRes && signinRes.ok){
         toast('Login successful')
          router.push('/dashboard')
@@ -88,8 +90,8 @@ export default function AuthPage({ type = "login" }) {
           password,
           authProvider: 'credentials'
         });
-        setLoading(false)
-        if(res.data.success){ 
+        setCredentialsLoading(false)
+        if(res.data.success){
           toast('Signup successful')
           router.push('/login')
         }
@@ -141,8 +143,8 @@ export default function AuthPage({ type = "login" }) {
               required
             />
             {error && <p className="text-red-500 text-sm">{error}</p>}
-            <Button className="w-full cursor-pointer" type="submit" disabled={loading}>
-              {loading ? "Loading..." : (isLogin ? "Login" : "Sign Up")}
+            <Button className="w-full cursor-pointer" type="submit" disabled={credentialsLoading}>
+              {credentialsLoading ? "Loading..." : (isLogin ? "Login" : "Sign Up")}
             </Button>
           </form>
 
@@ -183,10 +185,10 @@ export default function AuthPage({ type = "login" }) {
             onClick={handleGithubLogin}
             variant="outline"
             className="w-full flex items-center justify-center cursor-pointer"
-            disabled={loading}
+            disabled={githubLoading}
           >
             <Github size={20}/>
-            {loading ? "Loading..." : "Github"}
+            {githubLoading ? "Loading..." : "Github"}
           </Button>
             {/* Google Auth */}
             <Button
@@ -194,10 +196,10 @@ export default function AuthPage({ type = "login" }) {
               onClick={handleGoogleLogin}
               variant="outline"
               className="w-full flex items-center justify-center cursor-pointer"
-              disabled={loading}
+              disabled={googleLoading}
             >
               <Chrome size={20} />
-              {loading ? "Loading..." : "Google"}
+              {googleLoading ? "Loading..." : "Google"}
             </Button>
             </div>
           </div>
