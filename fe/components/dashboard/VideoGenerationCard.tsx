@@ -4,6 +4,8 @@ import { Card, CardContent } from "../ui/card";
 import { useRef } from "react";
 import { toast } from "sonner";
 import Loader from "../loaders/Loader";
+import { BACKEND_BASE_URL } from "@/lib/constants";
+import { useSession } from "next-auth/react";
 
 interface VideoGenerationCardProps {
     currentVideoUrl: string | null;
@@ -26,13 +28,27 @@ export default function VideoGenerationCard({
     loading
 }: VideoGenerationCardProps) {
     const videoRef = useRef<HTMLVideoElement | null>(null);
+    const { data: session } = useSession();
 
-    const handleDownload = () => {
+    const handleDownload = async () => {
         if (!currentVideoUrl) return;
-        const a = document.createElement('a');
-        a.href = currentVideoUrl;
-        a.download = 'generated-video.mp4';
-        a.click();
+        const filename = currentVideoUrl.split('/').pop();
+        if (!filename) {
+            toast.error('Failed to download video');
+            return;
+        }
+        try {
+            const token = (session?.user as { accessToken?: string })?.accessToken;
+            const res = await fetch(
+                `${BACKEND_BASE_URL}/sessions/download?key=${encodeURIComponent(filename)}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            const data = await res.json();
+            if (!data.success) throw new Error();
+            window.location.href = data.url;
+        } catch {
+            toast.error('Failed to download video');
+        }
     };
 
     return (

@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import prisma from "../client/prismaClient";
+import { getGcpSignedUrl } from "../lib/utils";
 
 // Get all sessions for a user
 export const getUserSessions = async (req: Request, res: Response): Promise<void> => {
@@ -70,6 +71,24 @@ export const getSessionById = async (req: Request, res: Response): Promise<void>
       success: false,
       message: 'Failed to fetch session'
     });
+  }
+};
+
+// Download a video by generating a signed GCS URL with attachment disposition
+export const downloadVideo = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { key } = req.query;
+
+    if (!key || typeof key !== 'string') {
+      res.status(400).json({ success: false, message: 'Missing file key' });
+      return;
+    }
+
+    const signedUrl = await getGcpSignedUrl(key, 300, true);
+    res.json({ success: true, url: signedUrl });
+  } catch (error) {
+    console.error('downloadVideo error:', error);
+    res.status(500).json({ success: false, message: 'Failed to generate download URL' });
   }
 };
 
