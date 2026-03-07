@@ -180,11 +180,7 @@ export default function SessionPage() {
       </div>
 
       <div className="flex-1 flex bg-neutral-900">
-        <div className="w-3/5 border-neutral-800 h-full">
-          <PromptCard onSubmit={handlePromptSubmit} />
-        </div>
-
-        <div className="w-2/5">
+        <div className="w-3/5">
           <VideoGenerationCard
             currentVideoUrl={currentVideoUrl}
             currentResponse={currentResponse}
@@ -195,6 +191,10 @@ export default function SessionPage() {
             canRedo={false}
             loading={loading}
           />
+        </div>
+
+        <div className="w-2/5 border-l border-neutral-800 h-full">
+          <PromptCard onSubmit={handlePromptSubmit} />
         </div>
       </div>
     </div>

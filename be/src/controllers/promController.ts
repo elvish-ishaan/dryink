@@ -27,7 +27,7 @@ interface JobData {
 }
 
 function validateLlmResponse(text: string): boolean {
-  return text.includes('```html') && text.includes('setFrame') && text.includes('getTotalFrames');
+  return text.includes('setFrame') && text.includes('getTotalFrames');
 }
 
 // --- Main Prompt Handler ---
