@@ -61,25 +61,40 @@ export default function AuthPage({ type = "login" }) {
     }
   };
 
+  const getLoginErrorMessage = (error: string | undefined | null): string => {
+    switch (error) {
+      case "CredentialsSignin":
+        return "Invalid email or password. Please try again.";
+      case "AccessDenied":
+        return "Access denied. You do not have permission to sign in.";
+      case "OAuthAccountNotLinked":
+        return "This email is already registered with a different sign-in method.";
+      default:
+        return "Something went wrong. Please try again.";
+    }
+  };
+
   const handleCredentialsAuth = async (authType: AuthType) => {
     setCredentialsLoading(true);
     setError(null);
     if(authType === 'login'){
       try {
        const signinRes = await signIn('credentials', { email, password, redirect: false });
-       setCredentialsLoading(false)
 
        if( signinRes && signinRes.ok){
         toast('Login successful')
          router.push('/dashboard')
          return
        }else{
-        toast(signinRes?.error)
+        const message = getLoginErrorMessage(signinRes?.error);
+        setError(message);
        }
 
       } catch (error) {
         console.log(error,'err in login')
-        setError("unable to login")
+        setError("Something went wrong. Please try again.");
+      } finally {
+        setCredentialsLoading(false);
       }
     }
     if(authType === 'signup'){
@@ -90,13 +105,20 @@ export default function AuthPage({ type = "login" }) {
           password,
           authProvider: 'credentials'
         });
-        setCredentialsLoading(false)
         if(res.data.success){
           toast('Signup successful')
           router.push('/login')
         }
       } catch (error) {
         console.log(error,'err in signup')
+        if (axios.isAxiosError(error)) {
+          const message = error.response?.data?.message || error.response?.data?.error || "Signup failed. Please try again.";
+          setError(message);
+        } else {
+          setError("Something went wrong. Please try again.");
+        }
+      } finally {
+        setCredentialsLoading(false);
       }
     }
   };
