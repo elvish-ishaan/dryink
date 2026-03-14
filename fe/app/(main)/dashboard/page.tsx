@@ -6,6 +6,7 @@ import VideoGenerationCard from '@/components/dashboard/VideoGenerationCard';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useCredits } from '@/contexts/CreditsContext';
 
 const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL;
 const DEFAULT_MODEL = 'arcee-ai/trinity-large-preview:free';
@@ -13,6 +14,7 @@ const DEFAULT_MODEL = 'arcee-ai/trinity-large-preview:free';
 const Page = () => {
   const { data: session } = useSession();
   const router = useRouter();
+  const { refreshCredits } = useCredits();
 
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -72,6 +74,7 @@ const Page = () => {
       const { chatSessionId, chatId, genRes } = data.data;
       sessionStorage.setItem(`anim_${chatSessionId}`, genRes);
       sessionStorage.setItem(`chatId_${chatSessionId}`, chatId);
+      refreshCredits();
       router.push(`/dashboard/${chatSessionId}`);
     } catch (err) {
       console.error('Submit error:', err);

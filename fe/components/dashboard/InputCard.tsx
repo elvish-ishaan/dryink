@@ -27,6 +27,7 @@ interface InputCardProps {
         model: string;
     }) => Promise<void>;
     disabled?: boolean;
+    prefillPrompt?: string;
 }
 
 function ModelOption({ m, selected, onSelect }: { m: OpenRouterModel; selected: boolean; onSelect: (m: OpenRouterModel) => void }) {
@@ -44,12 +45,16 @@ function ModelOption({ m, selected, onSelect }: { m: OpenRouterModel; selected: 
     );
 }
 
-export default function InputCard({ onSubmit, disabled = false }: InputCardProps) {
+export default function InputCard({ onSubmit, disabled = false, prefillPrompt }: InputCardProps) {
     const [prompt, setPrompt] = useState('');
     // fpsIndex: 0=Slow(15), 1=Medium(24), 2=Fast(30)
     const [fpsIndex, setFpsIndex] = useState(1);
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState<ErrorState>({ prompt: '' });
+
+    useEffect(() => {
+        if (prefillPrompt) setPrompt(prefillPrompt);
+    }, [prefillPrompt]);
 
     const DEFAULT_MODEL = 'arcee-ai/trinity-large-preview:free';
 

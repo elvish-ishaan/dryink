@@ -7,6 +7,7 @@ import Sidebar from '@/components/dashboard/Sidebar';
 import PromptCard from '@/components/dashboard/PromptCard';
 import VideoGenerationCard from '@/components/dashboard/VideoGenerationCard';
 import { toast } from 'sonner';
+import { useCredits } from '@/contexts/CreditsContext';
 
 const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL;
 
@@ -14,6 +15,7 @@ export default function SessionPage() {
   const { data: authSession } = useSession();
   const params = useParams();
   const router = useRouter();
+  const { refreshCredits } = useCredits();
 
   const sessionId = params.sessionId as string;
 
@@ -173,6 +175,7 @@ export default function SessionPage() {
       setExportedVideoUrl(null);
       currentCodeRef.current = genRes;
       setIsGenerating(false);
+      refreshCredits();
     } catch (err) {
       console.error('Submit error:', err);
       toast.error('Failed to generate animation');
@@ -215,6 +218,12 @@ export default function SessionPage() {
     }
   };
 
+  const promptColRef = useRef<HTMLDivElement>(null);
+
+  const handleReply = useCallback(() => {
+    promptColRef.current?.querySelector('textarea')?.focus();
+  }, []);
+
   const handleExportComplete = useCallback((url: string) => {
     setExportedVideoUrl(url);
     setExportJobId(null);
@@ -248,10 +257,11 @@ export default function SessionPage() {
             exportJobId={exportJobId}
             onExportRequest={handleExportRequest}
             onExportComplete={handleExportComplete}
+            onReply={handleReply}
           />
         </div>
 
-        <div className="w-2/5 border-l border-neutral-800 h-full">
+        <div ref={promptColRef} className="w-2/5 border-l border-neutral-800 h-full">
           <PromptCard
             messages={messages}
             onSubmit={handlePromptSubmit}

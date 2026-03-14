@@ -23,6 +23,7 @@ interface VideoGenerationCardProps {
     exportJobId?: string | null;
     onExportRequest?: () => void;
     onExportComplete?: (url: string) => void;
+    onReply?: () => void;
 }
 
 export default function VideoGenerationCard({
@@ -37,6 +38,7 @@ export default function VideoGenerationCard({
     exportJobId,
     onExportRequest,
     onExportComplete,
+    onReply,
 }: VideoGenerationCardProps) {
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const { data: session } = useSession();
@@ -66,71 +68,77 @@ export default function VideoGenerationCard({
 
     return (
         <Card className="flex bg-neutral-800 rounded-none flex-col h-full">
-            <CardContent className="flex flex-col w-full h-full p-2 items-center justify-center">
+            <CardContent className="flex flex-col w-full h-full p-2 overflow-hidden">
                 {loading ? (
-                    <div className="flex flex-col gap-10 items-center">
+                    <div className="flex flex-col gap-10 items-center justify-center h-full">
                         <Loader />
                         <span className="text-neutral-300 font-semibold">
                             Generating animation...
                         </span>
                     </div>
                 ) : animationCode ? (
-                    <>
-                        <div className="w-full max-w-3xl">
-                            <AnimationIframe htmlCode={animationCode} />
+                    <div className="flex flex-col w-full h-full">
+                        {/* Iframe fills all remaining space */}
+                        <div className="flex-1 min-h-0">
+                            <AnimationIframe htmlCode={animationCode} onReply={onReply} />
                         </div>
 
-                        {exportJobId && onExportComplete ? (
-                            <ExportProgressBar
-                                jobId={exportJobId}
-                                token={token}
-                                onComplete={onExportComplete}
-                            />
-                        ) : currentVideoUrl ? (
-                            <div className="mt-3">
-                                <a
-                                    href={currentVideoUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 text-sm text-blue-400 hover:text-blue-300"
-                                >
-                                    <ExternalLink className="w-4 h-4" />
-                                    Watch Exported Video
-                                </a>
-                            </div>
-                        ) : (
-                            <div className="flex gap-2 w-full max-w-3xl justify-center mt-2">
-                                <Button
-                                    onClick={onUndo}
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={!canUndo}
-                                >
-                                    <Undo2 className="w-4 h-4 mr-1" />
-                                    Previous
-                                </Button>
-                                {onExportRequest && (
-                                    <Button onClick={onExportRequest} variant="outline" size="sm">
-                                        <Download className="w-4 h-4 mr-1" />
-                                        Download Video
+                        {/* Bottom controls — fixed height, never scroll */}
+                        <div className="flex-shrink-0">
+                            {exportJobId && onExportComplete ? (
+                                <ExportProgressBar
+                                    jobId={exportJobId}
+                                    token={token}
+                                    onComplete={onExportComplete}
+                                />
+                            ) : currentVideoUrl ? (
+                                <div className="flex justify-center py-2">
+                                    <a
+                                        href={currentVideoUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 text-sm text-blue-400 hover:text-blue-300"
+                                    >
+                                        <ExternalLink className="w-4 h-4" />
+                                        Watch Exported Video
+                                    </a>
+                                </div>
+                            ) : (
+                                <div className="flex gap-2 justify-center py-2">
+                                    <Button
+                                        onClick={onUndo}
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={!canUndo}
+                                    >
+                                        <Undo2 className="w-4 h-4 mr-1" />
+                                        Previous
                                     </Button>
-                                )}
-                                <Button
-                                    onClick={onRedo}
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={!canRedo}
-                                >
-                                    <Redo2 className="w-4 h-4 mr-1" />
-                                    Next
-                                </Button>
-                            </div>
-                        )}
+                                    {onExportRequest && (
+                                        <Button onClick={onExportRequest} variant="outline" size="sm">
+                                            <Download className="w-4 h-4 mr-1" />
+                                            Download Video
+                                        </Button>
+                                    )}
+                                    <Button
+                                        onClick={onRedo}
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={!canRedo}
+                                    >
+                                        <Redo2 className="w-4 h-4 mr-1" />
+                                        Next
+                                    </Button>
+                                </div>
+                            )}
 
-                        <div className="text-xs text-muted-foreground text-center mt-1 max-w-3xl">
-                            {prompt}
+                            {prompt && (
+                                <div className="text-xs text-muted-foreground text-center pb-1 px-2 truncate">
+                                    {prompt}
+                                </div>
+                            )}
                         </div>
-                    </>
+                    </div>
                 ) : currentVideoUrl ? (
                     // Legacy sessions: show video player
                     <>

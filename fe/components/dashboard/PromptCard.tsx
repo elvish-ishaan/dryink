@@ -1,7 +1,7 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bot, Loader2 } from "lucide-react";
+import { Bot, CornerUpLeft, Loader2 } from "lucide-react";
 import InputCard from "./InputCard";
 import ToolTiper from "./ToolTiper";
 
@@ -13,6 +13,7 @@ interface PromptCardProps {
 
 export default function PromptCard({ messages, onSubmit, isGenerating }: PromptCardProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [replyPrompt, setReplyPrompt] = useState<string | undefined>();
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -46,7 +47,7 @@ export default function PromptCard({ messages, onSubmit, isGenerating }: PromptC
               {messages.map((msg) => (
                 <div
                   key={msg.id}
-                  className={`flex items-start gap-2 ${
+                  className={`flex items-start gap-2 group/msg ${
                     msg.role === "user" ? "justify-end" : "justify-start"
                   }`}
                 >
@@ -56,24 +57,36 @@ export default function PromptCard({ messages, onSubmit, isGenerating }: PromptC
                     </div>
                   )}
 
-                  <div
-                    className={`max-w-[78%] px-3 py-2 rounded-lg text-sm leading-relaxed ${
-                      msg.role === "user"
-                        ? "bg-neutral-700 text-white rounded-tr-sm"
-                        : "bg-neutral-900 border border-neutral-700 text-neutral-200 rounded-tl-sm"
-                    }`}
-                  >
-                    {msg.status === "pending" ? (
-                      <div className="flex items-center gap-2 text-neutral-400">
-                        <Loader2 className="w-3 h-3 animate-spin flex-shrink-0" />
-                        <span className="italic text-xs">Thinking...</span>
-                      </div>
-                    ) : msg.status === "failed" ? (
-                      <span className="text-red-400 text-xs">
-                        Failed to generate a response.
-                      </span>
-                    ) : (
-                      msg.content
+                  <div className={`flex items-end gap-1 max-w-[78%] ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+                    <div
+                      className={`px-3 py-2 rounded-lg text-sm leading-relaxed ${
+                        msg.role === "user"
+                          ? "bg-neutral-700 text-white rounded-tr-sm"
+                          : "bg-neutral-900 border border-neutral-700 text-neutral-200 rounded-tl-sm"
+                      }`}
+                    >
+                      {msg.status === "pending" ? (
+                        <div className="flex items-center gap-2 text-neutral-400">
+                          <Loader2 className="w-3 h-3 animate-spin flex-shrink-0" />
+                          <span className="italic text-xs">Thinking...</span>
+                        </div>
+                      ) : msg.status === "failed" ? (
+                        <span className="text-red-400 text-xs">
+                          Failed to generate a response.
+                        </span>
+                      ) : (
+                        msg.content
+                      )}
+                    </div>
+
+                    {msg.status === "sent" && msg.content && (
+                      <button
+                        onClick={() => setReplyPrompt(msg.content)}
+                        className="flex-shrink-0 opacity-0 group-hover/msg:opacity-100 transition-opacity p-1 rounded hover:bg-neutral-700 text-neutral-500 hover:text-neutral-300"
+                        title="Reply with this message"
+                      >
+                        <CornerUpLeft className="w-3.5 h-3.5" />
+                      </button>
                     )}
                   </div>
                 </div>
@@ -99,7 +112,11 @@ export default function PromptCard({ messages, onSubmit, isGenerating }: PromptC
 
         {/* Sticky input */}
         <div className="shrink-0 mt-2">
-          <InputCard onSubmit={onSubmit} disabled={isGenerating} />
+          <InputCard
+            onSubmit={async (p, params) => { setReplyPrompt(undefined); await onSubmit(p, params); }}
+            disabled={isGenerating}
+            prefillPrompt={replyPrompt}
+          />
         </div>
       </CardContent>
     </Card>

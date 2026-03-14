@@ -45,5 +45,22 @@ export function sanitizeAnimationCode(html: string): string {
     }
   }
 
+  // Inject CSS to remove scrollbars and fill the iframe viewport
+  const styleTag = '<style>html,body{margin:0;padding:0;overflow:hidden;width:100%;height:100%;}</style>';
+  if (sanitized.includes('</head>')) {
+    sanitized = sanitized.replace('</head>', styleTag + '</head>');
+  } else {
+    sanitized = styleTag + sanitized;
+  }
+
+  // Inject play/pause message listener (parent sends 'pause' / 'play' via postMessage)
+  const controlScript = '<scr' + 'ipt>window.addEventListener("message",function(e){if(e.data==="pause"){if(typeof noLoop==="function")noLoop();}else if(e.data==="play"){if(typeof loop==="function")loop();}});</scr' + 'ipt>';
+  const lastBody = sanitized.lastIndexOf('</body>');
+  if (lastBody !== -1) {
+    sanitized = sanitized.slice(0, lastBody) + controlScript + sanitized.slice(lastBody);
+  } else {
+    sanitized += controlScript;
+  }
+
   return sanitized;
 }
