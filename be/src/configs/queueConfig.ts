@@ -10,5 +10,6 @@ export const connection = {
 };
 
 export const taskQueue = new Queue('tasks', { connection });
+export const videoExportQueue = new Queue('video-export', { connection });
 
 logger.info({ host: connection.host, port: connection.port }, 'BullMQ queue initialized');

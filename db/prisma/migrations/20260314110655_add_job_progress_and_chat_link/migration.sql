@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE "Job" ADD COLUMN     "chatId" TEXT,
+ADD COLUMN     "progress" INTEGER NOT NULL DEFAULT 0;
+
+-- AddForeignKey
+ALTER TABLE "Job" ADD CONSTRAINT "Job_chatId_fkey" FOREIGN KEY ("chatId") REFERENCES "Chat"("id") ON DELETE SET NULL ON UPDATE CASCADE;

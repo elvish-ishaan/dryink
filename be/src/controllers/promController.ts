@@ -1,8 +1,5 @@
 import { Request, Response } from "express";
 import { modifySketchSystemPrompt, newSystemPrompt } from "../lib/prompts";
-import { taskQueue } from "../configs/queueConfig";
-import { v4 as uuidv4 } from 'uuid';
-import { getGcpSignedUrl } from "../lib/utils";
 import prisma from "../client/prismaClient";
 import OpenAI from "openai";
 import { logger } from "../lib/logger";
@@ -16,20 +13,6 @@ function getOpenRouter(): OpenAI {
     });
   }
   return _openrouter;
-}
-
-enum JobStatus {
-  PENDING = "pending",
-  COMPLETED = "completed",
-  FAILED = "failed",
-}
-
-interface JobData {
-  jobId: string,
-  chatId: string,
-  status: JobStatus,
-  response?: string | null,
-  fps?: number,
 }
 
 function parseStructuredResponse(raw: string, defaultMessage = 'Animation generated!'): { code: string; message: string } {
@@ -96,24 +79,11 @@ export const handlePrompt = async (req: Request, res: Response) => {
       return;
     }
 
-    // Init a job and deduct credit atomically
-    const [job] = await prisma.$transaction([
-      prisma.job.create({
-        data: { userId: req.user?.id, status: JobStatus.PENDING },
-      }),
-      prisma.user.update({
-        where: { id: req.user?.id },
-        data: { credits: { decrement: 1 } },
-      }),
-    ]);
-
-    if (!job) {
-      res.status(500).json({
-        success: false,
-        message: 'Unable to create job'
-      });
-      return;
-    }
+    // Deduct credit
+    await prisma.user.update({
+      where: { id: req.user?.id },
+      data: { credits: { decrement: 1 } },
+    });
 
     let chatSession;
     let chat;
@@ -167,23 +137,12 @@ export const handlePrompt = async (req: Request, res: Response) => {
       success: true,
       data: {
         chatSessionId: chatSession?.id,
-        jobId: job?.id,
+        chatId: chat?.id,
         prompt: prompt,
         genRes: responseText,
         message: llmMessage,
       },
     });
-
-    const jobData: JobData = {
-      jobId: job.id,
-      chatId: chat?.id,
-      status: JobStatus.PENDING,
-      response: responseText,
-      fps,
-    };
-
-    logger.info({ jobId: job.id }, 'Publishing job to queue');
-    await taskQueue.add('video-gen', jobData);
 
   } catch (error) {
     logger.error(error, 'handlePrompt error');
@@ -243,23 +202,10 @@ export const handleFollowUpPrompt = async (req: Request, res: Response) => {
       return;
     }
 
-    const [job] = await prisma.$transaction([
-      prisma.job.create({
-        data: { userId: req.user?.id, status: JobStatus.PENDING },
-      }),
-      prisma.user.update({
-        where: { id: req.user?.id },
-        data: { credits: { decrement: 1 } },
-      }),
-    ]);
-
-    if (!job) {
-      res.status(500).json({
-        success: false,
-        message: 'Unable to create job'
-      });
-      return;
-    }
+    await prisma.user.update({
+      where: { id: req.user?.id },
+      data: { credits: { decrement: 1 } },
+    });
 
     const chat = await prisma.chat.create({
       data: {
@@ -282,23 +228,12 @@ export const handleFollowUpPrompt = async (req: Request, res: Response) => {
       success: true,
       data: {
         chatSessionId: chatSessionId,
-        jobId: job?.id,
+        chatId: chat?.id,
         prompt: followUprompt,
         genRes: followUpResponseText,
         message: followUpMessage,
       },
     });
-
-    const jobData: JobData = {
-      jobId: job.id,
-      chatId: chat?.id,
-      status: JobStatus.PENDING,
-      response: followUpResponseText,
-      fps,
-    };
-
-    logger.info({ jobId: job.id }, 'Publishing follow-up job to queue');
-    await taskQueue.add('video-gen', jobData);
 
   } catch (error) {
     logger.error(error, 'handleFollowUpPrompt error');

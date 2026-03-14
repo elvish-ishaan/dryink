@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Sidebar from '@/components/dashboard/Sidebar';
 import PromptCard from '@/components/dashboard/PromptCard';
@@ -13,19 +13,23 @@ const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL;
 export default function SessionPage() {
   const { data: authSession } = useSession();
   const params = useParams();
-  const searchParams = useSearchParams();
   const router = useRouter();
 
   const sessionId = params.sessionId as string;
-  const jobIdFromUrl = searchParams.get('jobId');
 
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  // Hybrid rendering state
+  const [animationCode, setAnimationCode] = useState<string>('');
+  const [currentChatId, setCurrentChatId] = useState<string>('');
+  const [exportJobId, setExportJobId] = useState<string | null>(null);
+  const [exportedVideoUrl, setExportedVideoUrl] = useState<string | null>(null);
+
+  // Legacy video history (for sessions that already have genUrl)
   const [videoHistory, setVideoHistory] = useState<VideoEntry[]>([]);
   const [videoIndex, setVideoIndex] = useState(-1);
-  const [isGenerating, setIsGenerating] = useState(!!jobIdFromUrl);
 
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const pollCountRef = useRef(0);
   // Stores the latest generated p5.js code for follow-up context
   const currentCodeRef = useRef<string>('');
 
@@ -40,7 +44,6 @@ export default function SessionPage() {
 
       const chats: Chat[] = data.data.chats;
 
-      // Rebuild conversation messages from DB chats
       const newMessages: ConversationMessage[] = chats.flatMap((chat) => [
         {
           id: `user-${chat.id}`,
@@ -57,7 +60,18 @@ export default function SessionPage() {
       ]);
       setMessages(newMessages);
 
-      // Rebuild video history from chats that have a generated URL
+      const lastChat = chats[chats.length - 1];
+      if (lastChat) {
+        currentCodeRef.current = lastChat.responce;
+        // Set animation code for resumed sessions
+        setAnimationCode(lastChat.responce);
+        setCurrentChatId(lastChat.id);
+        if (lastChat.genUrl) {
+          setExportedVideoUrl(lastChat.genUrl);
+        }
+      }
+
+      // Rebuild legacy video history from chats that have a genUrl
       const videos: VideoEntry[] = chats
         .filter((c) => c.genUrl)
         .map((c) => ({ url: c.genUrl!, prompt: c.prompt }));
@@ -65,84 +79,28 @@ export default function SessionPage() {
       if (videos.length > 0) {
         setVideoIndex(videos.length - 1);
       }
-
-      // Keep latest code for follow-up context
-      const lastChat = chats[chats.length - 1];
-      if (lastChat) {
-        currentCodeRef.current = lastChat.responce;
-      }
-
-      // Stop loading if the latest chat already has its video
-      if (lastChat?.genUrl) {
-        setIsGenerating(false);
-      }
     } catch (err) {
       console.error('Failed to fetch session:', err);
     }
-  };
-
-  const startPolling = (jobId: string, token: string): void => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    pollCountRef.current = 0;
-
-    intervalRef.current = setInterval(async () => {
-      pollCountRef.current += 1;
-
-      if (pollCountRef.current >= 100) {
-        clearInterval(intervalRef.current!);
-        intervalRef.current = null;
-        setIsGenerating(false);
-        toast.error('Generation timed out');
-        return;
-      }
-
-      try {
-        const res = await fetch(`${BACKEND_BASE_URL}/prompt/${jobId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await res.json();
-
-        if (!data.success) return; // still pending
-
-        if (data.data?.status === 'completed') {
-          clearInterval(intervalRef.current!);
-          intervalRef.current = null;
-          // Fetch updated session to get latest genUrl + sync everything
-          await fetchSession(token);
-          router.replace(`/dashboard/${sessionId}`, { scroll: false });
-        } else if (data.data?.status === 'failed') {
-          clearInterval(intervalRef.current!);
-          intervalRef.current = null;
-          setIsGenerating(false);
-          toast.error('Video generation failed');
-        }
-      } catch (err) {
-        console.error('Polling error:', err);
-      }
-    }, 3000);
   };
 
   useEffect(() => {
     const token = authSession?.user?.accessToken;
     if (!token) return;
 
-    fetchSession(token);
-
-    if (jobIdFromUrl) {
-      setIsGenerating(true);
-      startPolling(jobIdFromUrl, token);
+    // Read instant animation code from sessionStorage (new sessions)
+    const storedCode = sessionStorage.getItem(`anim_${sessionId}`);
+    const storedChatId = sessionStorage.getItem(`chatId_${sessionId}`);
+    if (storedCode && storedChatId) {
+      sessionStorage.removeItem(`anim_${sessionId}`);
+      sessionStorage.removeItem(`chatId_${sessionId}`);
+      setAnimationCode(storedCode);
+      setCurrentChatId(storedChatId);
+      currentCodeRef.current = storedCode;
     }
 
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    fetchSession(token);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authSession?.user?.accessToken, sessionId]);
 
   const handlePromptSubmit = async (
@@ -154,12 +112,12 @@ export default function SessionPage() {
 
     const tempAsstId = `asst-temp-${Date.now()}`;
 
-    // Optimistically add user message + pending assistant bubble
     setMessages((prev) => [
       ...prev,
       { id: `user-temp-${Date.now()}`, role: 'user', content: prompt, status: 'sent' },
       { id: tempAsstId, role: 'assistant', content: '', status: 'pending' },
     ]);
+    setIsGenerating(true);
 
     try {
       const response = await fetch(`${BACKEND_BASE_URL}/prompt/followUpPrompt`, {
@@ -186,6 +144,7 @@ export default function SessionPage() {
         setMessages((prev) =>
           prev.map((m) => (m.id === tempAsstId ? { ...m, status: 'failed' } : m))
         );
+        setIsGenerating(false);
         return;
       }
 
@@ -194,34 +153,79 @@ export default function SessionPage() {
         setMessages((prev) =>
           prev.map((m) => (m.id === tempAsstId ? { ...m, status: 'failed' } : m))
         );
+        setIsGenerating(false);
         return;
       }
 
-      // Show LLM's conversational reply immediately
       setMessages((prev) =>
         prev.map((m) =>
           m.id === tempAsstId
-            ? {
-                ...m,
-                content: data.data.message || 'Animation is being generated!',
-                status: 'sent',
-              }
+            ? { ...m, content: data.data.message || 'Animation updated!', status: 'sent' }
             : m
         )
       );
 
-      setIsGenerating(true);
-      startPolling(data.data.jobId, token);
+      // Instant re-render — no polling needed
+      const { genRes, chatId } = data.data;
+      setAnimationCode(genRes);
+      setCurrentChatId(chatId);
+      setExportJobId(null);
+      setExportedVideoUrl(null);
+      currentCodeRef.current = genRes;
+      setIsGenerating(false);
     } catch (err) {
       console.error('Submit error:', err);
-      toast.error('Failed to generate video');
+      toast.error('Failed to generate animation');
       setMessages((prev) =>
         prev.map((m) => (m.id === tempAsstId ? { ...m, status: 'failed' } : m))
       );
+      setIsGenerating(false);
     }
   };
 
+  const handleExportRequest = async () => {
+    const token = authSession?.user?.accessToken;
+    if (!token || !currentChatId) return;
+
+    try {
+      const res = await fetch(`${BACKEND_BASE_URL}/export`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ chatId: currentChatId, fps: 24 }),
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        toast.error(data.message || 'Failed to start export');
+        return;
+      }
+
+      if (data.data.genUrl) {
+        // Already completed
+        setExportedVideoUrl(data.data.genUrl);
+      } else if (data.data.jobId) {
+        setExportJobId(data.data.jobId);
+      }
+    } catch {
+      toast.error('Failed to start export');
+    }
+  };
+
+  const handleExportComplete = useCallback((url: string) => {
+    setExportedVideoUrl(url);
+    setExportJobId(null);
+    toast.success('Video export complete!');
+  }, []);
+
   const currentVideo = videoHistory[videoIndex] ?? null;
+
+  // When showing iframe, pass exportedVideoUrl for "Watch Exported Video" link.
+  // When showing legacy video player, pass the history URL.
+  const displayVideoUrl = animationCode ? exportedVideoUrl : (currentVideo?.url ?? null);
 
   return (
     <div className="flex h-screen bg-neutral-950 text-white">
@@ -232,7 +236,7 @@ export default function SessionPage() {
       <div className="flex-1 flex bg-neutral-900">
         <div className="w-3/5">
           <VideoGenerationCard
-            currentVideoUrl={currentVideo?.url ?? null}
+            currentVideoUrl={displayVideoUrl}
             currentResponse=""
             prompt={currentVideo?.prompt ?? ''}
             onUndo={() => setVideoIndex((i) => i - 1)}
@@ -240,6 +244,10 @@ export default function SessionPage() {
             canUndo={videoIndex > 0}
             canRedo={videoIndex < videoHistory.length - 1}
             loading={isGenerating}
+            animationCode={animationCode}
+            exportJobId={exportJobId}
+            onExportRequest={handleExportRequest}
+            onExportComplete={handleExportComplete}
           />
         </div>
 

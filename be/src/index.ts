@@ -9,6 +9,7 @@ import authRoute from './routes/auth';
 import sessionRoute from './routes/session';
 import paymentRoute from './routes/payment';
 import contactRoute from './routes/contact';
+import exportRoute from './routes/export';
 
 dotenv.config();
 
@@ -19,6 +20,7 @@ app.use(cors());
 
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: 'Too many requests' });
 const signupLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 5, message: 'Too many signup attempts' });
+const exportLimiter = rateLimit({ windowMs: 10 * 60 * 1000, max: 3, message: 'Too many export requests' });
 
 app.use('/api/v1/auth/login', authLimiter);
 app.use('/api/v1/auth/signup', signupLimiter);
@@ -29,6 +31,7 @@ app.use('/api/v1/auth', authRoute);
 app.use('/api/v1/sessions', sessionRoute);
 app.use('/api/v1/payment', paymentRoute);
 app.use('/api/v1/contact', contactRoute);
+app.use('/api/v1/export', exportLimiter, exportRoute);
 
 app.get("/", (req, res) => {
   res.json({

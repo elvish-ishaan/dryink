@@ -64,15 +64,18 @@ const Page = () => {
       setMessages((prev) =>
         prev.map((m) =>
           m.id === tempAsstId
-            ? { ...m, content: data.data.message || 'Animation is being generated!', status: 'sent' }
+            ? { ...m, content: data.data.message || 'Animation ready!', status: 'sent' }
             : m
         )
       );
 
-      router.push(`/dashboard/${data.data.chatSessionId}?jobId=${data.data.jobId}`);
+      const { chatSessionId, chatId, genRes } = data.data;
+      sessionStorage.setItem(`anim_${chatSessionId}`, genRes);
+      sessionStorage.setItem(`chatId_${chatSessionId}`, chatId);
+      router.push(`/dashboard/${chatSessionId}`);
     } catch (err) {
       console.error('Submit error:', err);
-      toast.error('Failed to generate video');
+      toast.error('Failed to generate animation');
       setMessages((prev) =>
         prev.map((m) => (m.id === tempAsstId ? { ...m, status: 'failed' } : m))
       );

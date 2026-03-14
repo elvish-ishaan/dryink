@@ -24,6 +24,6 @@ export const uploadToGcp = async (filePath: string, fileName: string) => {
     const url = `https://storage.googleapis.com/${process.env.GCP_BUCKET_NAME}/${fileName}`;
     return url;
   } catch (error) {
-    console.log(error, "error in uploading to gcp");
+    throw error;
   }
 };

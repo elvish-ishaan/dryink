@@ -32,6 +32,13 @@ interface Chat {
   genUrl: string | null;
 }
 
+interface AnimationEntry {
+  code: string;
+  chatId: string;
+  prompt: string;
+  videoUrl?: string;
+}
+
 interface ConversationMessage {
   id: string;
   role: 'user' | 'assistant';

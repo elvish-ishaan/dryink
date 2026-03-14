@@ -16,7 +16,10 @@ interface RenderHTMLToVideoOptions {
   videoName?: string;
 }
 
-export async function generateVideo(opts: RenderHTMLToVideoOptions): Promise<string> {
+export async function generateVideo(
+  opts: RenderHTMLToVideoOptions,
+  onProgress?: (rendered: number, total: number) => void
+): Promise<string> {
   const {
     htmlContent,
     fps = 24,
@@ -28,12 +31,10 @@ export async function generateVideo(opts: RenderHTMLToVideoOptions): Promise<str
   const jobId = `job-${Date.now()}`;
   const baseDir = path.join(tmpdir(), jobId);
   const htmlPath = path.join(baseDir, 'render.html');
-  const framesDir = path.join(baseDir, 'frames');
   const outputPath = path.join(baseDir, videoName);
 
   try {
     await fs.ensureDir(baseDir);
-    await fs.ensureDir(framesDir);
 
     const rawHtml = htmlContent.replace(/^```html\s*/, '').replace(/```$/, '');
     await fs.outputFile(htmlPath, rawHtml);
@@ -67,44 +68,17 @@ export async function generateVideo(opts: RenderHTMLToVideoOptions): Promise<str
     const frameCount = Math.min(detectedFrames, MAX_FRAME_COUNT);
     logger.info({ frameCount }, 'Detected animation frame count');
 
-    logger.info('Starting frame capture');
-    for (let i = 0; i < frameCount; i++) {
-      const filename = path.join(framesDir, `frame_${String(i).padStart(4, '0')}.png`);
-      await page.evaluate((frameNum) => {
-        // @ts-ignore
-        if (typeof window.setFrame === 'function') {
-          // @ts-ignore
-          window.setFrame(frameNum);
-        }
-      }, i);
-      await page.screenshot({ path: filename });
-      if ((i + 1) % 10 === 0) {
-        logger.info(`Captured frame ${i + 1}/${frameCount}`);
-      }
-    }
-    await browser.close();
-
-    logger.info('Generating video with FFmpeg');
-    await runFFmpeg(framesDir, outputPath, fps);
-    logger.info({ outputPath }, 'Video saved');
-
-    return outputPath;
-  } catch (err) {
-    logger.error(err, 'Error during video generation');
-    throw err;
-  }
-}
-
-function runFFmpeg(framesDir: string, outputPath: string, fps: number): Promise<void> {
-  return new Promise<void>((resolve, reject) => {
+    // Spawn FFmpeg reading from stdin pipe
     const ffmpeg = spawn(ffmpegPath!, [
       '-y',
+      '-f', 'image2pipe',
+      '-vcodec', 'png',
       '-framerate', String(fps),
-      '-i', path.join(framesDir, 'frame_%04d.png'),
+      '-i', 'pipe:0',
       '-c:v', 'libx264',
       '-pix_fmt', 'yuv420p',
       '-crf', '18',
-      '-preset', 'slow',
+      '-preset', 'fast',
       '-profile:v', 'high',
       outputPath,
     ]);
@@ -113,13 +87,49 @@ function runFFmpeg(framesDir: string, outputPath: string, fps: number): Promise<
       logger.debug(`FFmpeg: ${data}`);
     });
 
-    ffmpeg.on('close', (code) => {
-      if (code === 0) resolve();
-      else reject(new Error(`FFmpeg process exited with code ${code}`));
+    const ffmpegDone = new Promise<void>((resolve, reject) => {
+      ffmpeg.on('close', (code) => {
+        if (code === 0) resolve();
+        else reject(new Error(`FFmpeg process exited with code ${code}`));
+      });
+      ffmpeg.on('error', reject);
     });
 
-    ffmpeg.on('error', (err) => {
-      reject(err);
-    });
-  });
+    logger.info('Starting frame capture (piped to FFmpeg)');
+    for (let i = 0; i < frameCount; i++) {
+      await page.evaluate((frameNum) => {
+        // @ts-ignore
+        if (typeof window.setFrame === 'function') {
+          // @ts-ignore
+          window.setFrame(frameNum);
+        }
+      }, i);
+
+      const buffer = await page.screenshot() as Buffer;
+
+      // Handle backpressure
+      const canWrite = ffmpeg.stdin.write(buffer);
+      if (!canWrite) {
+        await new Promise<void>((resolve) => ffmpeg.stdin.once('drain', resolve));
+      }
+
+      if (onProgress) {
+        onProgress(i + 1, frameCount);
+      }
+
+      if ((i + 1) % 10 === 0) {
+        logger.info(`Captured frame ${i + 1}/${frameCount}`);
+      }
+    }
+
+    ffmpeg.stdin.end();
+    await browser.close();
+    await ffmpegDone;
+
+    logger.info({ outputPath }, 'Video saved');
+    return outputPath;
+  } catch (err) {
+    logger.error(err, 'Error during video generation');
+    throw err;
+  }
 }

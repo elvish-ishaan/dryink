@@ -52,6 +52,7 @@ model Chat {
   responce String
   message String?
   genUrl String?
+  exportJobs  Job[]
 }
 
 
@@ -62,4 +63,7 @@ model Job {
   User User @relation(fields: [userId], references: [id])
   date  DateTime @default(now())
   genUrl String?
+  chatId    String?
+  progress  Int    @default(0)
+  Chat      Chat?  @relation(fields: [chatId], references: [id])
 }

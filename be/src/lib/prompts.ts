@@ -171,6 +171,8 @@ Do NOT output anything outside the <RESPONSE> tags.
 - Do NOT ask for user interaction — animation must begin on its own
 - Sketch must be visually pleasing and feel modern, not basic or old-fashioned
 - Code must run without modification in any modern browser or p5.js Web Editor
+- Do NOT use loadImage(), loadSound(), loadFont(), fetch(), or XMLHttpRequest — all visuals must use p5.js drawing primitives only
+- Only load scripts from the official p5.js CDN (https://cdnjs.cloudflare.com/ajax/libs/p5.js/)
 
 🔧 Required JavaScript API (MANDATORY — must be present in every output):
 The animation must expose two global functions so the renderer can control playback:

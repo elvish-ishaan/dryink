@@ -20,20 +20,42 @@ app.get("/", (req, res) => {
 
 enum JobStatus {
   PENDING = "pending",
+  PROCESSING = "processing",
   FAILED = "failed",
   COMPLETED = "completed",
 }
 
-const worker = new Worker('tasks', async (job) => {
+const worker = new Worker('video-export', async (job) => {
   const jobData = job.data;
-  logger.info({ jobId: jobData.jobId }, 'Processing job');
+  logger.info({ jobId: jobData.jobId }, 'Processing export job');
+
+  await prisma.job.update({
+    where: { id: jobData.jobId },
+    data: { status: JobStatus.PROCESSING },
+  });
+
+  let lastReportedProgress = 0;
+
+  const onProgress = (rendered: number, total: number) => {
+    const progress = Math.round((rendered / total) * 100);
+    if (progress - lastReportedProgress >= 5) {
+      lastReportedProgress = progress;
+      prisma.job.update({
+        where: { id: jobData.jobId },
+        data: { progress },
+      }).catch((err: Error) => logger.error(err, 'Progress update failed'));
+    }
+  };
 
   try {
-    const videoPath = await generateVideo({
-      htmlContent: jobData.response,
-      fps: jobData.fps || 24,
-      videoName: 'output.mp4',
-    });
+    const videoPath = await generateVideo(
+      {
+        htmlContent: jobData.code,
+        fps: jobData.fps || 24,
+        videoName: 'output.mp4',
+      },
+      onProgress
+    );
 
     const uploadedObjUrl = await uploadToGcp(videoPath, `${jobData.jobId}.mp4`);
 
@@ -47,15 +69,15 @@ const worker = new Worker('tasks', async (job) => {
 
     await prisma.job.update({
       where: { id: jobData.jobId },
-      data: { status: JobStatus.COMPLETED, genUrl: uploadedObjUrl },
+      data: { status: JobStatus.COMPLETED, genUrl: uploadedObjUrl, progress: 100 },
     });
 
     await prisma.chat.update({
       where: { id: jobData.chatId },
-      data: { responce: jobData.response, genUrl: uploadedObjUrl },
+      data: { genUrl: uploadedObjUrl },
     });
 
-    logger.info({ jobId: jobData.jobId }, 'Job completed');
+    logger.info({ jobId: jobData.jobId }, 'Export job completed');
   } catch (error) {
     logger.error(error, `Job ${jobData.jobId} failed`);
 
@@ -68,11 +90,11 @@ const worker = new Worker('tasks', async (job) => {
   }
 }, { connection });
 
-worker.on('failed', (job, err) => {
+worker.on('failed', (job, err: Error) => {
   logger.error(err, `BullMQ job ${job?.id} failed`);
 });
 
-logger.info('Worker started. Waiting for tasks...');
+logger.info('Worker started. Waiting for export tasks...');
 
 app.listen(PORT, () => {
   logger.info(`Server running at ${PORT}`);
