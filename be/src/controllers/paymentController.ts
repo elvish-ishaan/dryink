@@ -29,17 +29,29 @@ export const createOrder = async (req: Request, res: Response) => {
     return;
   }
 
+  const userId = req.user?.id;
+  if (!userId) {
+    res.status(401).json({ success: false, message: 'Unauthorized' });
+    return;
+  }
+
   try {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      res.status(404).json({ success: false, message: 'User not found' });
+      return;
+    }
+
     const razorpay = getRazorpayInstance();
     const razorpayOrder = await razorpay.orders.create({
       amount:   pkg.amountCents,
       currency: 'USD',
-      receipt:  `r_${req.user?.id?.slice(0, 8)}_${Date.now().toString(36)}`,
+      receipt:  `r_${userId.slice(0, 8)}_${Date.now().toString(36)}`,
     });
 
     const transaction = await prisma.transaction.create({
       data: {
-        userId:          req.user?.id,
+        userId,
         razorpayOrderId: razorpayOrder.id,
         credits:         pkg.credits,
         amountUSD:       pkg.amountUSD,
