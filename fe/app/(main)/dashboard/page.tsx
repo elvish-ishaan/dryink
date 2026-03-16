@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useCredits } from '@/contexts/CreditsContext';
+import type { ConversationMessage } from '@/types/types';
 
 const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL;
 const DEFAULT_MODEL = 'arcee-ai/trinity-large-preview:free';

@@ -8,6 +8,7 @@ import PromptCard from '@/components/dashboard/PromptCard';
 import VideoGenerationCard from '@/components/dashboard/VideoGenerationCard';
 import { toast } from 'sonner';
 import { useCredits } from '@/contexts/CreditsContext';
+import type { Chat, ConversationMessage, VideoEntry } from '@/types/types';
 
 const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL;
 

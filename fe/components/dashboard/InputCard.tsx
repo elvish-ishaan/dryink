@@ -5,16 +5,13 @@ import { Button } from "../ui/button";
 import { useState, useEffect, useRef } from "react";
 import { ChevronDown, Loader2 } from "lucide-react";
 import AnimatedPromptInput from "./AnimatedPrompt";
+import type { ErrorState } from "@/types/types";
 
 const FPS_OPTIONS = [
   { label: 'Slow', value: 15 },
   { label: 'Medium', value: 24 },
   { label: 'Fast', value: 30 },
 ] as const;
-
-export type ErrorState = {
-    prompt: string;
-};
 
 interface OpenRouterModel {
     id: string;
@@ -50,7 +47,7 @@ export default function InputCard({ onSubmit, disabled = false, prefillPrompt }:
     // fpsIndex: 0=Slow(15), 1=Medium(24), 2=Fast(30)
     const [fpsIndex, setFpsIndex] = useState(1);
     const [loading, setLoading] = useState(false);
-    const [errors, setErrors] = useState<ErrorState>({ prompt: '' });
+    const [errors, setErrors] = useState<ErrorState>({ prompt: '', width: '', height: '', frameCount: '' });
 
     useEffect(() => {
         if (prefillPrompt) setPrompt(prefillPrompt);
@@ -116,7 +113,7 @@ export default function InputCard({ onSubmit, disabled = false, prefillPrompt }:
     };
 
     const validateInputs = () => {
-        const newErrors: ErrorState = { prompt: '' };
+        const newErrors: ErrorState = { prompt: '', width: '', height: '', frameCount: '' };
         if (!prompt.trim()) {
             newErrors.prompt = 'Prompt is required';
         }

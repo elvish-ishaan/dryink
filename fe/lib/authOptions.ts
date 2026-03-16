@@ -74,7 +74,8 @@ export const authOptions: NextAuthOptions = {
             if (!res.data?.success) throw new Error(res.data?.message);
             token.id = res.data.user.id;
             token.accessToken = res.data.accessToken;
-          } catch (error) {
+          } catch (_error) {
+            console.log(_error,'getting error in auth')
             token.error = "OAuthBackendError";
           }
         }

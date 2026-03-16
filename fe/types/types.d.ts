@@ -23,7 +23,7 @@ export type ErrorState = {
   frameCount: string;
 };
 
-interface Chat {
+export interface Chat {
   id: string;
   chatSessionId: string;
   prompt: string;
@@ -39,14 +39,14 @@ interface AnimationEntry {
   videoUrl?: string;
 }
 
-interface ConversationMessage {
+export interface ConversationMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   status: 'sent' | 'pending' | 'failed';
 }
 
-interface VideoEntry {
+export interface VideoEntry {
   url: string;
   prompt: string;
 }
