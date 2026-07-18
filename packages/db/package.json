@@ -1,10 +1,14 @@
 {
-  "name": "db",
+  "name": "@dryink/db",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
-    "build": "npx tsc -b",
+    "generate": "prisma generate",
+    "migrate": "prisma migrate dev",
+    "build": "prisma generate && tsc -b",
+    "postinstall": "prisma generate",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

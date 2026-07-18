@@ -42,86 +42,100 @@ Dryink is an AI-powered video generation platform that enables users to create e
 
 ## Project Structure
 
+This is an **npm workspaces monorepo**: one root `package.json` owns the workspace list (`apps/*`, `packages/*`) and orchestration scripts, and there is a single root `node_modules` / `package-lock.json` shared by every package. Packages are scoped under `@dryink/*` (`@dryink/be`, `@dryink/fe`, `@dryink/worker`, `@dryink/db`), and `apps/be`/`apps/worker` depend on `@dryink/db` as a real workspace dependency rather than a relative path.
+
 ```
 dryink/
-├── fe/                         # Frontend — Next.js 15
-│   ├── app/
-│   │   ├── (auth)/             # Login & signup pages
-│   │   ├── (main)/             # Dashboard & session views
-│   │   │   └── [sessionId]/    # Per-session route
-│   │   ├── api/auth/           # NextAuth.js handler
-│   │   └── pricing/            # Pricing page
-│   ├── components/
-│   │   ├── AuthComponent/      # Auth UI
-│   │   ├── dashboard/          # Dashboard UI
-│   │   ├── herosection/        # Landing hero
-│   │   ├── navs/               # Navigation
-│   │   ├── recorder/           # Video recorder
-│   │   ├── ui/                 # Radix-based primitives
-│   │   └── ...
-│   ├── contexts/
-│   │   └── CreditsContext.tsx  # User credits state
-│   ├── lib/
-│   │   ├── authOptions.ts      # NextAuth config
-│   │   └── sanitizeCode.ts     # HTML sanitization
-│   ├── Dockerfile.dev          # Dev container (Node 20)
-│   ├── next.config.ts
-│   └── package.json
+├── package.json                # Root workspace config + orchestration scripts
+├── package-lock.json            # Single lockfile for the whole monorepo
+├── .gitignore                   # Root-level ignores (node_modules/)
 │
-├── be/                         # Backend API — Express 5
-│   ├── src/
-│   │   ├── index.ts            # App entry & route wiring
-│   │   ├── controllers/
-│   │   │   ├── authController.ts      # Login / signup / JWT
-│   │   │   ├── promController.ts      # LLM prompt & generation
-│   │   │   ├── exportController.ts    # Submit export job
-│   │   │   ├── paymentController.ts   # Razorpay order & verify
-│   │   │   ├── sessionController.ts   # Chat session CRUD
-│   │   │   ├── editorController.ts    # Code editor endpoints
-│   │   │   └── contactController.ts   # Contact form
-│   │   ├── routes/             # Route definitions
-│   │   ├── configs/
-│   │   │   ├── gcpClient.ts    # GCP auth
-│   │   │   └── queueConfig.ts  # BullMQ queue init
-│   │   ├── middleware/
-│   │   │   └── auth.ts         # JWT auth middleware
-│   │   └── lib/
-│   │       ├── prompts.ts      # Gemini prompt templates
-│   │       └── logger.ts       # Pino logger
-│   ├── docker/be/Dockerfile    # Multi-stage production image
-│   └── package.json
+├── apps/
+│   ├── fe/                      # Frontend — Next.js 15 (@dryink/fe)
+│   │   ├── app/
+│   │   │   ├── (auth)/          # Login & signup pages
+│   │   │   ├── (main)/          # Dashboard & session views
+│   │   │   │   └── [sessionId]/ # Per-session route
+│   │   │   ├── api/auth/        # NextAuth.js handler
+│   │   │   └── pricing/         # Pricing page
+│   │   ├── components/
+│   │   │   ├── AuthComponent/   # Auth UI
+│   │   │   ├── dashboard/       # Dashboard UI
+│   │   │   ├── herosection/     # Landing hero
+│   │   │   ├── navs/            # Navigation
+│   │   │   ├── recorder/        # Video recorder
+│   │   │   ├── ui/              # Radix-based primitives
+│   │   │   └── ...
+│   │   ├── contexts/
+│   │   │   └── CreditsContext.tsx  # User credits state
+│   │   ├── lib/
+│   │   │   ├── authOptions.ts   # NextAuth config
+│   │   │   └── sanitizeCode.ts  # HTML sanitization
+│   │   ├── Dockerfile.dev       # Dev container
+│   │   ├── next.config.ts
+│   │   └── package.json
+│   │
+│   ├── be/                      # Backend API — Express 5 (@dryink/be)
+│   │   ├── src/
+│   │   │   ├── index.ts         # App entry & route wiring
+│   │   │   ├── controllers/
+│   │   │   │   ├── authController.ts      # Login / signup / JWT
+│   │   │   │   ├── promController.ts      # LLM prompt & generation
+│   │   │   │   ├── exportController.ts    # Submit export job
+│   │   │   │   ├── paymentController.ts   # Razorpay order & verify
+│   │   │   │   ├── sessionController.ts   # Chat session CRUD
+│   │   │   │   ├── editorController.ts    # Code editor endpoints
+│   │   │   │   └── contactController.ts   # Contact form
+│   │   │   ├── routes/          # Route definitions
+│   │   │   ├── client/
+│   │   │   │   └── prismaClient.ts  # Imports the shared prisma client from @dryink/db
+│   │   │   ├── configs/
+│   │   │   │   ├── gcpClient.ts # GCP auth
+│   │   │   │   └── queueConfig.ts  # BullMQ queue init
+│   │   │   ├── middleware/
+│   │   │   │   └── auth.ts      # JWT auth middleware
+│   │   │   └── lib/
+│   │   │       ├── prompts.ts   # Gemini prompt templates
+│   │   │       └── logger.ts    # Pino logger
+│   │   └── package.json         # depends on "@dryink/db": "*"
+│   │
+│   └── worker/                  # Background worker — BullMQ (@dryink/worker)
+│       ├── src/
+│       │   ├── index.ts         # Worker entrypoint (port 5001)
+│       │   ├── configs/
+│       │   │   └── prismaclient.ts  # Imports the shared prisma client from @dryink/db
+│       │   └── core/
+│       │       └── operation.ts # Puppeteer → FFmpeg pipeline
+│       └── package.json         # depends on "@dryink/db": "*"
 │
-├── worker/                     # Background worker — BullMQ
-│   ├── src/
-│   │   ├── index.ts            # Worker entrypoint (port 5001)
-│   │   └── core/
-│   │       └── operation.ts    # Puppeteer → FFmpeg pipeline
-│   ├── docker/worker/Dockerfile # Multi-stage + Chromium deps
-│   └── package.json
-│
-├── db/                         # Shared DB package (Prisma)
-│   ├── prisma/
-│   │   ├── schema.prisma       # 7 models
-│   │   └── migrations/         # 5 migrations
-│   └── package.json
+├── packages/
+│   └── db/                      # Shared DB package — Prisma (@dryink/db)
+│       ├── prisma/
+│       │   ├── schema.prisma    # 7 models
+│       │   └── migrations/      # 5 migrations
+│       ├── src/index.ts         # Exports the shared `prisma` client
+│       └── package.json         # main/types point at dist/, postinstall runs `prisma generate`
 │
 ├── docker/
-│   ├── be/Dockerfile           # Production backend image
-│   └── worker/Dockerfile       # Production worker image (Puppeteer)
+│   ├── be/Dockerfile            # Production backend image
+│   └── worker/Dockerfile        # Production worker image (Puppeteer)
 │
 ├── scripts/
-│   └── docker-setup.sh         # Automated setup script
-├── docker-compose.yaml         # Local dev: Postgres + Redis
+│   └── docker-setup.sh          # Automated setup script
+├── docker-compose.yaml          # Local dev: Postgres + Redis
 └── README.md
 ```
+
+> **Note:** `docker/be/Dockerfile`, `docker/worker/Dockerfile`, `docker-compose.yaml`, and `scripts/docker-setup.sh` still reference the pre-monorepo flat paths (`db/`, `be/`, `worker/`) and have **not** been updated for the `apps/`/`packages/` layout yet — that's tracked as separate follow-up work. Everything under "Running without Docker" below reflects the current, working setup.
 
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
+| Monorepo | npm workspaces (`apps/*`, `packages/*`) |
 | Frontend | Next.js 15, React 19, Tailwind CSS v4, Radix UI, NextAuth |
 | Backend | Node.js, Express 5, TypeScript, Pino |
-| ORM | Prisma 6 (shared `db/` package) |
+| ORM | Prisma 6 (shared `@dryink/db` workspace package) |
 | Database | PostgreSQL |
 | Queue | Redis + BullMQ |
 | Video | Puppeteer (headless Chrome), FFmpeg |
@@ -132,8 +146,8 @@ dryink/
 
 ## Prerequisites
 
-- Node.js v20+
-- npm
+- Node.js v22+
+- npm (workspaces support, npm 7+)
 - Docker & Docker Compose (for running Postgres and Redis locally)
 - OpenRouter API key
 - GCP project + service account with Cloud Storage access
@@ -154,12 +168,12 @@ cd dryink
 Copy `.env.example` to `.env` in each service directory:
 
 ```bash
-cp be/.env.example be/.env
-cp fe/.env.example fe/.env
-cp worker/.env.example worker/.env
+cp apps/be/.env.example apps/be/.env
+cp apps/fe/.env.example apps/fe/.env
+cp apps/worker/.env.example apps/worker/.env
 ```
 
-#### `be/.env`
+#### `apps/be/.env`
 
 ```env
 PORT=5000
@@ -174,7 +188,7 @@ RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxxxxxx
 RAZORPAY_KEY_SECRET=xxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
-#### `fe/.env`
+#### `apps/fe/.env`
 
 ```env
 NEXT_PUBLIC_BACKEND_BASE_URL='http://localhost:5000/api/v1'
@@ -185,7 +199,7 @@ GITHUB_SECRET='your-github-oauth-app-secret'
 NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxxxxxx
 ```
 
-#### `worker/.env`
+#### `apps/worker/.env`
 
 ```env
 DATABASE_URL='postgresql://postgres:postgres@localhost:5432/dryink'
@@ -213,55 +227,53 @@ This starts:
 
 ### 2. Install dependencies
 
+A single install at the repo root sets up every workspace (`apps/be`, `apps/fe`, `apps/worker`, `packages/db`) and generates the Prisma client automatically via `packages/db`'s `postinstall` hook:
+
 ```bash
-# Database package (run first — others depend on it)
-cd db && npm install && cd ..
-
-# Backend
-cd be && npm install && cd ..
-
-# Frontend
-cd fe && npm install && cd ..
-
-# Worker
-cd worker && npm install && cd ..
+npm install
 ```
 
 ### 3. Run Prisma migrations
 
 ```bash
-cd db
-npx prisma migrate deploy --schema=prisma/schema.prisma
-cd ..
+npm run db:migrate
 ```
 
-### 4. Start all services (3 terminals)
+### 4. Build the workspace (optional, for a production-style check)
+
+```bash
+npm run build
+# Builds packages/db first, then apps/be, apps/worker, apps/fe — in that order,
+# since be/worker import @dryink/db's compiled dist/ output.
+```
+
+### 5. Start all services (3 terminals)
 
 **Terminal 1 — Backend API:**
 ```bash
-npx prisma generate --schema=prisma/schema.prisma
-cd be && npm run dev
+npm run dev:be
 # Listening on http://localhost:5000
 ```
 
 **Terminal 2 — Frontend:**
 ```bash
-cd fe && npm run dev
+npm run dev:fe
 # Listening on http://localhost:3000
 ```
 
 **Terminal 3 — Worker:**
 ```bash
-npx prisma generate --schema=prisma/schema.prisma
-cd worker && npm run dev
+npm run dev:worker
 # Listening on http://localhost:5001
 ```
+
+All three `dev:*` scripts, plus `build`, `build:db`, `build:be`, `build:worker`, `build:fe`, `db:generate`, and `db:migrate`, are defined once in the root `package.json` and delegate to the relevant workspace via `npm run <script> -w <workspace>`.
 
 ---
 
 ## Running with Docker
 
-> **Note:** The `docker-compose.yaml` is currently configured for infrastructure only (Postgres + Redis). The `be`, `fe`, and `worker` services have production Dockerfiles under `docker/be/` and `docker/worker/` respectively, and a dev Dockerfile at `fe/Dockerfile.dev`.
+> **Note:** The `docker-compose.yaml` is currently configured for infrastructure only (Postgres + Redis). The `be`, `fe`, and `worker` services have production Dockerfiles under `docker/be/` and `docker/worker/` respectively, and a dev Dockerfile at `apps/fe/Dockerfile.dev`. **These Dockerfiles have not yet been updated for the `apps/`/`packages/` monorepo layout** — they still `COPY` from the old flat `db/`, `be/`, `worker/` paths internally and will need rewriting before Option B below will actually build. Option A (infra-only + local services) is the reliable path for now.
 
 ### Option A — Infrastructure only + local services (recommended for dev)
 
@@ -272,9 +284,7 @@ docker compose up -d
 # Then run fe, be, worker locally as described above
 ```
 
-### Option B — Build and run all services with Docker
-
-Build the production images:
+### Option B — Build and run all services with Docker (not yet updated for the monorepo layout)
 
 ```bash
 # Backend
@@ -284,21 +294,14 @@ docker build -f docker/be/Dockerfile -t dryink-be .
 docker build -f docker/worker/Dockerfile -t dryink-worker .
 
 # Frontend (dev image)
-docker build -f fe/Dockerfile.dev -t dryink-fe ./fe
+docker build -f apps/fe/Dockerfile.dev -t dryink-fe ./apps/fe
 ```
 
-> The worker image bundles Chromium (via Puppeteer) and FFmpeg. It requires extra Linux system libraries (fonts, GTK, X11) that are handled in the multi-stage `docker/worker/Dockerfile`.
+> The worker image bundles Chromium (via Puppeteer) and FFmpeg. It requires extra Linux system libraries (fonts, GTK, X11) that are handled in the multi-stage `docker/worker/Dockerfile`. As noted above, `docker/be/Dockerfile` and `docker/worker/Dockerfile` still reference pre-monorepo paths and need updating before these builds will succeed.
 
 ### Automated setup script
 
-A helper script is available for first-time setup:
-
-```bash
-chmod +x scripts/docker-setup.sh
-./scripts/docker-setup.sh
-```
-
-This checks prerequisites, creates `.env` files from examples, starts infrastructure, runs migrations, and installs all dependencies.
+A helper script exists at `scripts/docker-setup.sh` for first-time setup, but like the Dockerfiles above, **it still references the old flat `be/`, `worker/`, `db/` paths and hasn't been updated for the monorepo layout yet** — use the manual steps under "Running without Docker" above instead until it's updated.
 
 ---
 
@@ -338,7 +341,7 @@ User ─────────────── ChatSession ── Chat ─�
 ### Running tests
 
 ```bash
-cd be && npm test    # Vitest unit tests
+npm test -w apps/be    # Vitest unit tests
 ```
 
 ### Code style

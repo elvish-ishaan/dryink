@@ -1,0 +1,24 @@
+{
+  "name": "dryink",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev:be": "npm run dev -w apps/be",
+    "dev:fe": "npm run dev -w apps/fe",
+    "dev:worker": "npm run dev -w apps/worker",
+    "build:db": "npm run build -w packages/db",
+    "build:be": "npm run build -w apps/be",
+    "build:worker": "npm run build -w apps/worker",
+    "build:fe": "npm run build -w apps/fe",
+    "build": "npm run build:db && npm run build:be && npm run build:worker && npm run build:fe",
+    "db:generate": "npm run generate -w packages/db",
+    "db:migrate": "npm run migrate -w packages/db"
+  }
+}

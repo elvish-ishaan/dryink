@@ -248,7 +248,7 @@ export const handleFollowUpPrompt = async (req: Request, res: Response) => {
 // --- Get Job Status ---
 export const handleJobStatus = async (req: Request, res: Response) => {
   try {
-    const { jobId } = req.params;
+    const jobId = req.params.jobId as string;
 
     if (!jobId) {
       res.status(400).json({

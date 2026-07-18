@@ -1,5 +1,5 @@
 {
-  "name": "worker",
+  "name": "@dryink/worker",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -14,11 +14,11 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@dryink/db": "*",
     "@google-cloud/storage": "^7.16.0",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@types/express": "^5.0.1",
     "dotenv": "^16.5.0",
-    "prisma": "^6.8.2",
     "express": "^5.1.0",
     "ffmpeg-static": "^5.2.0",
     "fluent-ffmpeg": "^2.1.2",

@@ -1,5 +1,4 @@
-
  //import prisma from db package
-import { prisma } from '../../../db/dist/index.js';
+import { prisma } from '@dryink/db';
  //export prisma client
  export default prisma;

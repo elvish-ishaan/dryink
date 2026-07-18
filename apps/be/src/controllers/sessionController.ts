@@ -37,7 +37,7 @@ export const getUserSessions = async (req: Request, res: Response): Promise<void
 // Get a specific session with its chats
 export const getSessionById = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { sessionId } = req.params;
+    const sessionId = req.params.sessionId as string;
 
     const session = await prisma.chatSession.findFirst({
       where: {
@@ -95,7 +95,7 @@ export const downloadVideo = async (req: Request, res: Response): Promise<void> 
 // Delete a session
 export const deleteSession = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { sessionId } = req.params;
+    const sessionId = req.params.sessionId as string;
 
     // First check if session belongs to user
     const session = await prisma.chatSession.findFirst({

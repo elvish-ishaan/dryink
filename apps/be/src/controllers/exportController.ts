@@ -79,7 +79,7 @@ export const handleExportRequest = async (req: Request, res: Response) => {
 };
 
 export const handleExportProgress = async (req: Request, res: Response) => {
-  const { jobId } = req.params;
+  const jobId = req.params.jobId as string;
   const token = req.query.token as string;
 
   if (!token) {
