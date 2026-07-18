@@ -1,55 +1,54 @@
 # Build stage
 FROM node:22-bookworm-slim AS builder
 
-# Mirror the repo layout so relative imports resolve correctly:
-# be/src/client/prismaClient.ts imports '../../../db/dist/index.js'
+# npm workspaces monorepo: build context is the repo root.
+# Copy every workspace manifest first so the root lockfile resolves consistently,
+# then scope the actual install to just @dryink/be and its @dryink/db dependency.
+WORKDIR /repo
 
-# --- Build db package first ---
-WORKDIR /repo/db
+COPY package.json package-lock.json ./
+COPY packages/db/package.json packages/db/package.json
+COPY packages/db/prisma packages/db/prisma
+COPY apps/be/package.json apps/be/package.json
+COPY apps/fe/package.json apps/fe/package.json
+COPY apps/worker/package.json apps/worker/package.json
 
-COPY db/package*.json ./
-RUN npm ci
+RUN npm ci --workspace=@dryink/db --workspace=@dryink/be --include-workspace-root
 
-COPY db/prisma ./prisma
-RUN npx prisma generate
+# --- Build db first: be imports @dryink/db's compiled dist/ output ---
+COPY packages/db/tsconfig.json packages/db/tsconfig.json
+COPY packages/db/src packages/db/src
+RUN npm run build --workspace=@dryink/db
 
-COPY db/tsconfig.json ./
-COPY db/src ./src
-RUN npm run build
-
-# --- Build be package ---
-WORKDIR /repo/be
-
-COPY be/package*.json ./
-RUN npm ci
-
-COPY be/tsconfig.json ./
-COPY be/src ./src
-RUN npm run build
+# --- Build be ---
+COPY apps/be/tsconfig.json apps/be/tsconfig.json
+COPY apps/be/src apps/be/src
+RUN npm run build --workspace=@dryink/be
 
 # Production stage
 FROM node:22-bookworm-slim AS runner
 
 ENV NODE_ENV=production
 
-# --- db prod deps + generated Prisma client ---
-WORKDIR /repo/db
+WORKDIR /repo
 
-COPY db/package*.json ./
-RUN npm ci --omit=dev
+COPY package.json package-lock.json ./
+COPY packages/db/package.json packages/db/package.json
+COPY packages/db/prisma packages/db/prisma
+COPY apps/be/package.json apps/be/package.json
+COPY apps/fe/package.json apps/fe/package.json
+COPY apps/worker/package.json apps/worker/package.json
 
-COPY db/prisma ./prisma
-# Copy generated .prisma/client from builder (avoids needing prisma CLI here)
-COPY --from=builder /repo/db/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /repo/db/dist ./dist
+RUN npm ci --workspace=@dryink/db --workspace=@dryink/be --include-workspace-root --omit=dev
 
-# --- be prod deps ---
-WORKDIR /repo/be
+# --- Generated Prisma client + compiled output, copied from builder ---
+# (db's postinstall can't regenerate here since the prisma CLI is a devDependency
+# and is omitted above; the already-generated client from the builder is used instead.)
+COPY --from=builder /repo/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /repo/packages/db/dist ./packages/db/dist
+COPY --from=builder /repo/apps/be/dist ./apps/be/dist
 
-COPY be/package*.json ./
-RUN npm ci --omit=dev
-
-COPY --from=builder /repo/be/dist ./dist
+WORKDIR /repo/apps/be
 
 EXPOSE 5000
 

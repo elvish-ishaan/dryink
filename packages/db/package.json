@@ -8,7 +8,7 @@
     "generate": "prisma generate",
     "migrate": "prisma migrate dev",
     "build": "prisma generate && tsc -b",
-    "postinstall": "prisma generate",
+    "postinstall": "prisma generate || true",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

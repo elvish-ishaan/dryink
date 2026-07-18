@@ -7,32 +7,30 @@ RUN apt-get update && apt-get install -y \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
-# Mirror the repo layout so relative imports resolve correctly:
-# worker/src/configs/prismaclient.ts imports '../../../db/dist/index.js'
+# npm workspaces monorepo: build context is the repo root.
+# Copy every workspace manifest first so the root lockfile resolves consistently,
+# then scope the actual install to just @dryink/worker and its @dryink/db dependency.
+WORKDIR /repo
 
-# --- Build db package first ---
-WORKDIR /repo/db
+COPY package.json package-lock.json ./
+COPY packages/db/package.json packages/db/package.json
+COPY packages/db/prisma packages/db/prisma
+COPY apps/worker/package.json apps/worker/package.json
+COPY apps/be/package.json apps/be/package.json
+COPY apps/fe/package.json apps/fe/package.json
 
-COPY db/package*.json ./
-RUN npm ci
+# Downloads Chromium into the builder cache (~/.cache/puppeteer)
+RUN npm ci --workspace=@dryink/db --workspace=@dryink/worker --include-workspace-root
 
-COPY db/prisma ./prisma
-RUN npx prisma generate
+# --- Build db first: worker imports @dryink/db's compiled dist/ output ---
+COPY packages/db/tsconfig.json packages/db/tsconfig.json
+COPY packages/db/src packages/db/src
+RUN npm run build --workspace=@dryink/db
 
-COPY db/tsconfig.json ./
-COPY db/src ./src
-RUN npm run build
-
-# --- Build worker package ---
-WORKDIR /repo/worker
-
-COPY worker/package*.json ./
-# Download Chromium into builder cache (~/.cache/puppeteer)
-RUN npm ci
-
-COPY worker/tsconfig.json ./
-COPY worker/src ./src
-RUN npm run build
+# --- Build worker ---
+COPY apps/worker/tsconfig.json apps/worker/tsconfig.json
+COPY apps/worker/src apps/worker/src
+RUN npm run build --workspace=@dryink/worker
 
 # Production stage
 FROM node:22-bookworm-slim AS runner
@@ -79,26 +77,27 @@ RUN apt-get update && apt-get install -y \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
-# --- db prod deps + generated Prisma client ---
-WORKDIR /repo/db
+WORKDIR /repo
 
-COPY db/package*.json ./
-RUN npm ci --omit=dev
+COPY package.json package-lock.json ./
+COPY packages/db/package.json packages/db/package.json
+COPY packages/db/prisma packages/db/prisma
+COPY apps/worker/package.json apps/worker/package.json
+COPY apps/be/package.json apps/be/package.json
+COPY apps/fe/package.json apps/fe/package.json
 
-COPY db/prisma ./prisma
-COPY --from=builder /repo/db/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /repo/db/dist ./dist
-
-# --- worker prod deps ---
-WORKDIR /repo/worker
-
-COPY worker/package*.json ./
-# Skip Chromium download — we copy it from builder below
-RUN PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true npm ci --omit=dev
+# Skip Chromium download — we copy the builder's cached download below
+# (db's postinstall can't regenerate here since the prisma CLI is a devDependency
+# and is omitted below; the already-generated client from the builder is used instead.)
+RUN PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true npm ci --workspace=@dryink/db --workspace=@dryink/worker --include-workspace-root --omit=dev
 
 # Copy Puppeteer's downloaded Chromium from builder
 COPY --from=builder /root/.cache/puppeteer /root/.cache/puppeteer
 
-COPY --from=builder /repo/worker/dist ./dist
+COPY --from=builder /repo/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /repo/packages/db/dist ./packages/db/dist
+COPY --from=builder /repo/apps/worker/dist ./apps/worker/dist
+
+WORKDIR /repo/apps/worker
 
 CMD ["node", "dist/index.js"]
