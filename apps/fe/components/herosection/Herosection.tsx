@@ -2,10 +2,14 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAnimate, stagger } from "motion/react";
 import { useSession } from "next-auth/react";
-import { ArrowRight } from "lucide-react";
-import NotBacked from "./NotBacked";
+import { ArrowUp, Mic, Paperclip, Search, Sparkles, Star } from "lucide-react";
+
+const MAX_PROMPT_LENGTH = 3000;
+const HERO_BACKGROUND_IMAGE =
+  "https://res.cloudinary.com/diqurtmad/image/upload/v1784374378/wallpapersden.com_forest-sky-fog_4496x3000_l4p8ho.jpg";
 
 const HeroSection = () => {
   const [scope, animate] = useAnimate();
@@ -16,38 +20,37 @@ const HeroSection = () => {
 
   useEffect(() => {
     const startAnimating = async () => {
-    await animate(
-      ".animate",
-      {
-        opacity: 1,
-        filter: "blur(0px)",
-        y: 0,
-      },
-      {
-        duration: 0.4,
-        ease: "easeInOut",
-        delay: stagger(0.2),
-      }
-    );
+      await animate(
+        ".animate",
+        {
+          opacity: 1,
+          filter: "blur(0px)",
+          y: 0,
+        },
+        {
+          duration: 0.4,
+          ease: "easeInOut",
+          delay: stagger(0.2),
+        }
+      );
 
-    animate(
-      ".animate-button",
-      {
-        opacity: 1,
-        filter: "blur(0px)",
-        y: 0,
-        scale: [0.8, 1],
-      },
-      {
-        type: "spring",
-        stiffness: 300,
-        damping: 20,
-      }
-    );
+      animate(
+        ".animate-button",
+        {
+          opacity: 1,
+          filter: "blur(0px)",
+          y: 0,
+          scale: [0.8, 1],
+        },
+        {
+          type: "spring",
+          stiffness: 300,
+          damping: 20,
+        }
+      );
     };
-  //call func
-  startAnimating();
-}, [animate]);
+    startAnimating();
+  }, [animate]);
 
   const handleSubmit = () => {
     const trimmed = prompt.trim();
@@ -66,60 +69,80 @@ const HeroSection = () => {
   return (
     <section
       ref={scope}
-      className="w-full min-h-screen flex items-center justify-center bg-white dark:bg-neutral-900 text-black dark:text-white px-6 py-16 relative overflow-hidden"
-      aria-label="Hero section introducing Richat AI assistant"
+      className="relative w-full min-h-screen overflow-hidden flex items-center justify-center px-6 md:px-[120px]"
+      aria-label="Hero section introducing Dryink AI video assistant"
     >
-      {/* Purple Background Glow */}
-      <div className="absolute inset-0 flex items-center justify-center z-0 pointer-events-none">
-        <div className="w-[550px] h-[550px] bg-[#4a3294] rounded-full blur-[60px] opacity-90 mb-20 hidden dark:block" />
-      </div>
-      {/* Diagonal Cross Grid Overlay */}
       <div
-        className="absolute inset-0 z-0 pointer-events-none opacity-30"
-        style={{
-          backgroundImage: `
-            linear-gradient(45deg, transparent 49%, #d1d5db 49%, #d1d5db 51%, transparent 51%),
-            linear-gradient(-45deg, transparent 49%, #d1d5db 49%, #d1d5db 51%, transparent 51%)
-          `,
-          backgroundSize: "40px 40px",
-          WebkitMaskImage:
-            "radial-gradient(ellipse 100% 32% at 50% 100%, #000 30%, transparent 80%)",
-          maskImage:
-            "radial-gradient(ellipse 100% 32% at 50% 100%, #000 30%, transparent 80%)",
-        }}
+        className="absolute inset-0 z-0 bg-cover bg-top"
+        style={{ backgroundImage: `url(${HERO_BACKGROUND_IMAGE})` }}
       />
+      {/* Light scrim, just enough for black text/content to stay legible over the image */}
+      <div className="absolute inset-0 z-[1] bg-gradient-to-b from-white/30 via-white/5 to-white/35 pointer-events-none" />
 
-      <div className="max-w-4xl w-full text-center relative z-10 mt-10">
-        <NotBacked
-            className="animate-button "
-            style={{ opacity: 0, filter: "blur(4px)", transform: "translateY(20px) " }}
-          />
-        {/* Animated Text */}
-        <p
-          className="animate text-sm tracking-widest text-purple-700 dark:text-white uppercase mb-4"
-          style={{ opacity: 0, filter: "blur(4px)", transform: "translateY(20px)" }}
-        >
-          Empower education through AI-driven animation.
-        </p>
-        <h1
-          className="animate text-4xl md:text-5xl font-extrabold leading-tight mb-6 text-neutral-700 dark:text-white"
-          style={{ opacity: 0, filter: "blur(4px)", transform: "translateY(20px)" }}
-        >
-          Where Ideas Turn into Animated Lessons
-        </h1>
-        <p
-          className="animate max-w-xl mx-auto mb-8 mt-10 text-violet-600 dark:text-violet-400"
-          style={{ opacity: 0, filter: "blur(4px)", transform: "translateY(20px)" }}
-        >
-          Easily turn lessons into engaging, animated videos. Dryink helps you simplify complex ideas through dynamic visuals — no animation skills needed.
-        </p>
-
-        {/* Prompt Input */}
+      <div className="relative z-10 w-full max-w-4xl flex flex-col items-center text-center -mt-[50px]">
+        {/* Badge */}
         <div
-          className="animate-button max-w-2xl mx-auto"
+          className="animate-button inline-flex items-center rounded-full shadow-md overflow-hidden mb-[34px]"
           style={{ opacity: 0, filter: "blur(4px)", transform: "translateY(20px)" }}
         >
-          <div className="relative flex items-end gap-3 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-2xl p-4 shadow-xl">
+          <span className="flex items-center gap-1.5 bg-[#0e1311] text-white px-4 py-2 text-sm font-nav font-medium">
+            <Star className="h-3.5 w-3.5 fill-current" />
+            New
+          </span>
+          <span className="bg-white/80 backdrop-blur px-4 py-2 text-sm font-badge text-black">
+            Discover what&apos;s possible
+          </span>
+        </div>
+
+        {/* Headline */}
+        <h1
+          className="animate font-heading font-bold text-black leading-none tracking-[-2px] md:tracking-[-4.8px] text-5xl sm:text-6xl md:text-8xl mb-[34px]"
+          style={{ opacity: 0, filter: "blur(4px)", transform: "translateY(20px)" }}
+        >
+          Turn Ideas Into
+          <br />
+          Animated Videos
+        </h1>
+
+        {/* Subtitle */}
+        <p
+          className="animate font-heading font-medium text-black/70 text-lg md:text-xl tracking-[-0.4px] max-w-[736px] mb-[44px]"
+          style={{ color: "#505050", opacity: 0, filter: "blur(4px)", transform: "translateY(20px)" }}
+        >
+          Describe what you want to explain, and Dryink generates a polished
+          animated video in seconds — no design or animation skills needed.
+        </p>
+
+        {/* Search / prompt box */}
+        <div
+          className="animate-button w-full max-w-[728px] rounded-[18px] p-3 backdrop-blur-md shadow-2xl"
+          style={{
+            backgroundColor: "rgba(0,0,0,0.24)",
+            opacity: 0,
+            filter: "blur(4px)",
+            transform: "translateY(20px)",
+          }}
+        >
+          {/* Top row: plan + model */}
+          <div className="flex items-center justify-between px-2 pb-2 font-nav font-medium text-xs text-white">
+            <div className="flex items-center gap-2">
+              <span>Free plan</span>
+              <Link
+                href="/pricing"
+                className="rounded-md px-2 py-0.5 text-[#0e1311] font-semibold"
+                style={{ backgroundColor: "rgba(90,225,76,0.89)" }}
+              >
+                Upgrade
+              </Link>
+            </div>
+            <div className="flex items-center gap-1.5 text-white/80">
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>Powered by Dryink AI</span>
+            </div>
+          </div>
+
+          {/* Main input */}
+          <div className="flex items-end gap-3 rounded-xl bg-white p-3 shadow-md">
             <textarea
               ref={textareaRef}
               value={prompt}
@@ -130,20 +153,41 @@ const HeroSection = () => {
                   handleSubmit();
                 }
               }}
+              maxLength={MAX_PROMPT_LENGTH}
               placeholder="Explain the Pythagorean theorem with an animated triangle..."
-              rows={4}
-              className="flex-1 resize-none bg-transparent border-0 outline-none text-base text-neutral-800 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 leading-relaxed"
+              rows={2}
+              className="flex-1 resize-none border-0 bg-transparent text-base leading-relaxed text-black outline-none placeholder:text-black/60"
             />
             <Button
               onClick={handleSubmit}
               disabled={!prompt.trim()}
-              className="shrink-0 rounded-xl bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white h-12 w-12 p-0 disabled:opacity-40"
+              className="h-9 w-9 shrink-0 rounded-full bg-black p-0 text-white hover:bg-black/80 disabled:opacity-40"
               aria-label="Generate animation"
             >
-              <ArrowRight className="h-4 w-4" />
+              <ArrowUp className="h-4 w-4" />
             </Button>
           </div>
-          <p className="text-xs text-neutral-400 mt-2">Press Enter to generate · Shift+Enter for new line</p>
+
+          {/* Bottom row: decorative actions + counter */}
+          <div className="flex items-center justify-between px-2 pt-2">
+            <div className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5 rounded-md bg-white/15 px-2.5 py-1 text-xs font-nav font-medium text-white">
+                <Paperclip className="h-3.5 w-3.5" />
+                Attach
+              </span>
+              <span className="flex items-center gap-1.5 rounded-md bg-white/15 px-2.5 py-1 text-xs font-nav font-medium text-white">
+                <Mic className="h-3.5 w-3.5" />
+                Voice
+              </span>
+              <span className="flex items-center gap-1.5 rounded-md bg-white/15 px-2.5 py-1 text-xs font-nav font-medium text-white">
+                <Search className="h-3.5 w-3.5" />
+                Prompts
+              </span>
+            </div>
+            <span className="text-xs text-white/70">
+              {prompt.length}/{MAX_PROMPT_LENGTH.toLocaleString()}
+            </span>
+          </div>
         </div>
       </div>
     </section>

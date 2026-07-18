@@ -46,12 +46,12 @@ export default function Featured() {
   const lineHeight = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
 
   return (
-    <section className="bg-white w-full text-neutral-900 dark:bg-neutral-900 dark:text-white py-10 px-6 md:px-32">
+    <section className="bg-white w-full text-neutral-900 py-10 px-6 md:px-32">
       <div className="flex flex-col justify-center items-center text-center max-w-3xl mx-auto mb-16">
-        <h2 className="text-3xl md:text-4xl font-bold text-[#4a3294]">
+        <h2 className="font-heading text-3xl md:text-4xl font-bold text-[#4a3294]">
          Bring Learning to Life with Dryink
         </h2>
-        <p className="mt-4 text-lg max-w-2xl mx-auto text-gray-600 dark:text-gray-300">
+        <p className="mt-4 font-body text-lg max-w-2xl mx-auto text-[#505050]">
           Turn complex concepts into dynamic, engaging animations in seconds. Dryink empowers educators, creators, and students to bring lessons to life through visually compelling, AI-generated videos — no design or animation skills required.
         </p>
       </div>
@@ -81,13 +81,13 @@ export default function Featured() {
                       transition={{ duration: 0.6 }}
                       className="text-left"
                     >
-                      <h3 className="text-3xl font-semibold text-[#4a3294] mb-4">
+                      <h3 className="font-heading text-3xl font-semibold text-[#4a3294] mb-4">
                         {section.title}
                       </h3>
-                      <p className="text-base text-gray-300 mb-2">
+                      <p className="font-body text-base text-neutral-800 mb-2">
                         {section.text}
                       </p>
-                      <p className="text-base text-gray-400">
+                      <p className="font-body text-base text-[#505050]">
                         {section.subText}
                       </p>
                     </motion.div>
@@ -117,7 +117,7 @@ export default function Featured() {
                         muted
                         loop
                         playsInline
-                        className="w-[250px] h-[250px] object-cover rounded-xl shadow-xl"
+                        className="w-[250px] h-[250px] object-cover rounded-xl shadow-xl border border-neutral-200"
                       />
                     </motion.div>
                   </>
@@ -136,7 +136,7 @@ export default function Featured() {
                         muted
                         loop
                         playsInline
-                        className="w-[250px] h-[250px] object-cover rounded-xl shadow-xl"
+                        className="w-[250px] h-[250px] object-cover rounded-xl shadow-xl border border-neutral-200"
                       />
                     </motion.div>
 
@@ -159,13 +159,13 @@ export default function Featured() {
                       transition={{ duration: 0.6 }}
                       className="text-left"
                     >
-                      <h3 className="text-3xl font-semibold text-[#4a3294] mb-4">
+                      <h3 className="font-heading text-3xl font-semibold text-[#4a3294] mb-4">
                         {section.title}
                       </h3>
-                      <p className="text-base text-gray-300 mb-2">
+                      <p className="font-body text-base text-neutral-800 mb-2">
                         {section.text}
                       </p>
-                      <p className="text-base text-gray-400">
+                      <p className="font-body text-base text-[#505050]">
                         {section.subText}
                       </p>
                     </motion.div>

@@ -53,10 +53,10 @@ export default function EnterpriseModal({ open, onOpenChange }: EnterpriseModalP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-neutral-900 border-neutral-700 max-w-lg">
+      <DialogContent className="bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 max-w-lg">
         <DialogHeader>
-          <DialogTitle className="text-white">Contact Enterprise Sales</DialogTitle>
-          <DialogDescription className="text-neutral-400">
+          <DialogTitle className="font-nav text-black dark:text-white">Contact Enterprise Sales</DialogTitle>
+          <DialogDescription className="font-body text-[#505050] dark:text-neutral-400">
             Tell us about your needs and we&apos;ll get back to you within 24 hours.
           </DialogDescription>
         </DialogHeader>
@@ -66,7 +66,7 @@ export default function EnterpriseModal({ open, onOpenChange }: EnterpriseModalP
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="bg-neutral-800 border-neutral-700 text-white placeholder:text-neutral-500"
+            className="font-body bg-[#f8f8f8] dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-black dark:text-white placeholder:text-neutral-500"
           />
           <Input
             type="email"
@@ -74,14 +74,14 @@ export default function EnterpriseModal({ open, onOpenChange }: EnterpriseModalP
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="bg-neutral-800 border-neutral-700 text-white placeholder:text-neutral-500"
+            className="font-body bg-[#f8f8f8] dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-black dark:text-white placeholder:text-neutral-500"
           />
           <Input
             placeholder="Company Name"
             required
             value={company}
             onChange={(e) => setCompany(e.target.value)}
-            className="bg-neutral-800 border-neutral-700 text-white placeholder:text-neutral-500"
+            className="font-body bg-[#f8f8f8] dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-black dark:text-white placeholder:text-neutral-500"
           />
           <Textarea
             placeholder="Tell us about your use case..."
@@ -89,12 +89,12 @@ export default function EnterpriseModal({ open, onOpenChange }: EnterpriseModalP
             required
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            className="bg-neutral-800 border-neutral-700 text-white placeholder:text-neutral-500 resize-none"
+            className="font-body bg-[#f8f8f8] dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-black dark:text-white placeholder:text-neutral-500 resize-none"
           />
           <Button
             type="submit"
             disabled={loading}
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+            className="w-full rounded-full bg-black hover:bg-black/80 text-white font-nav font-medium"
           >
             {loading ? 'Sending...' : 'Send Message'}
           </Button>

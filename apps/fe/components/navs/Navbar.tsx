@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import logo from '@/assets/logo.svg'
 import { useSession } from "next-auth/react";
+import { useTheme } from "next-themes";
 
 export default function Navbar() {
   const navItems = [
@@ -16,29 +17,19 @@ export default function Navbar() {
     { name: "Contacts", href: "/contacts" },
   ];
 
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
-  const { data: session, status} = useSession();
-  console.log(session, status);
+  const { status } = useSession();
+  const { resolvedTheme, setTheme } = useTheme();
 
   useEffect(() => {
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const stored = localStorage.getItem("theme");
-    if (stored === "dark" || (!stored && prefersDark)) {
-      document.documentElement.classList.add("dark");
-      setIsDarkMode(true);
-    } else {
-      document.documentElement.classList.remove("dark");
-      setIsDarkMode(false);
-    }
+    setMounted(true);
   }, []);
 
+  const isDarkMode = mounted && resolvedTheme === "dark";
   const toggleDarkMode = () => {
-    const newMode = !isDarkMode;
-    setIsDarkMode(newMode);
-    document.documentElement.classList.toggle("dark", newMode);
-    localStorage.setItem("theme", newMode ? "dark" : "light");
+    setTheme(isDarkMode ? "light" : "dark");
   };
 
   return (
@@ -46,78 +37,82 @@ export default function Navbar() {
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="fixed top-4 left-0 w-full z-50 px-4"
+      className="fixed top-0 left-0 z-50 w-full border-b border-neutral-200 bg-white/90 backdrop-blur-md dark:border-neutral-800 dark:bg-neutral-950/90"
     >
-      <div className="mx-auto max-w-7xl bg-neutral-50/80 dark:bg-neutral-800/80 backdrop-blur-md shadow-lg rounded-3xl border border-neutral-200 dark:border-neutral-700 px-6 py-3 flex items-center justify-between">
+      <div className="flex items-center justify-between px-6 py-4 md:px-[120px] md:py-4">
         {/* Logo */}
         <div className="flex items-center gap-2">
           <Image
             src={logo}
             alt="logo"
-            width={30}
-            height={30}
-            className="rounded-full dark:text-white"
+            width={28}
+            height={28}
+            className="rounded-full"
           />
-          <Link href="/" className="text-lg font-bold text-neutral-900 dark:text-white">Dryink</Link>
+          <Link
+            href="/"
+            className="font-nav text-2xl font-semibold tracking-[-1.44px] text-neutral-900 dark:text-white"
+          >
+            Dryink
+          </Link>
         </div>
 
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-8">
-          <motion.ul layoutId="navItems" className="flex gap-6">
-            {navItems.map((item, idx) => (
+          <ul className="flex gap-6">
+            {navItems.map((item) => (
               <li key={item.name}>
                 <Button
-                  variant={"link"}
-                  key={idx}
+                  variant="link"
                   onClick={() => router.push(item.href)}
-                  className="px-3 py-2 text-md w-full relative font-medium text-neutral-600 dark:text-neutral-300 rounded-2xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                  className="px-0 font-nav text-base font-medium tracking-[-0.2px] text-neutral-700 hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-white"
                 >
                   {item.name}
                 </Button>
               </li>
             ))}
-          </motion.ul>
+          </ul>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <Button
               onClick={toggleDarkMode}
               aria-label="Toggle Dark Mode"
-              className="p-2 rounded-md bg-neutral-50 dark:bg-neutral-800 focus:outline-none cursor-pointer  hover:bg-neutral-100"
+              className="rounded-md bg-transparent p-2 text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800"
             >
-              {isDarkMode ? <Sun className="w-5 h-5 text-neutral-800 dark:text-white" /> : <Moon className="w-5 h-5 text-neutral-800 dark:text-white " />}
+              {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </Button>
 
-            <motion.div layoutId="signin" className="flex gap-2">
-              {
-                status === 'authenticated' ? <Button
+            <div className="flex gap-2">
+              {status === "authenticated" ? (
+                <Button
                   onClick={() => router.push("/dashboard")}
-                  variant={"outline"}
-                  className="rounded-2xl text-neutral-800 dark:text-white cursor-pointer"
+                  className="w-[101px] rounded-full bg-black font-nav text-white hover:bg-black/80 dark:bg-white dark:text-black dark:hover:bg-white/80"
                 >
-                  Dashboard </Button> : 
-                  <>
-                    <Button
-                onClick={() => router.push("/login")}
-                variant="outline"
-                className="rounded-2xl text-neutral-800 dark:text-white cursor-pointer"
-              >
-                Login
-                    </Button>
-                    <Button
-                onClick={() => router.push("/signup")}
-                variant="outline"
-                className="rounded-2xl text-neutral-800 dark:text-white cursor-pointer"
-              >
-                Sign Up
-                    </Button>
-                  </>
-                
-              }
-              { status === 'loading' && <Button
-                variant="outline"
-                className="rounded-2xl text-neutral-800 dark:text-white cursor-pointer"
-              >Loading...</Button>}
-            </motion.div>
+                  Dashboard
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    onClick={() => router.push("/signup")}
+                    variant="ghost"
+                    className="w-[82px] rounded-full font-nav text-neutral-900 hover:bg-neutral-100 dark:text-white dark:hover:bg-neutral-800"
+                  >
+                    Sign Up
+                  </Button>
+                  <Button
+                    onClick={() => router.push("/login")}
+                    className="w-[101px] rounded-full bg-black font-nav text-white hover:bg-black/80 dark:bg-white dark:text-black dark:hover:bg-white/80"
+                  >
+                    Log In
+                  </Button>
+                </>
+              )}
+              {status === "loading" && (
+                <Button variant="outline" className="rounded-full font-nav">
+                  Loading...
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -126,7 +121,7 @@ export default function Navbar() {
           {!isMobileMenuOpen && (
             <Button
               onClick={() => setIsMobileMenuOpen(true)}
-              className="p-2 rounded-md bg-neutral-200 dark:bg-neutral-700"
+              className="p-2 rounded-md bg-neutral-100 dark:bg-neutral-800"
             >
               <Menu className="w-6 h-6 text-neutral-800 dark:text-white" />
             </Button>
@@ -137,7 +132,6 @@ export default function Navbar() {
       {/* Mobile Sidebar */}
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-50 flex md:hidden">
-    
           <div
             className="fixed inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => setIsMobileMenuOpen(false)}
@@ -145,7 +139,7 @@ export default function Navbar() {
 
           {/* Sidebar */}
           <div
-            className=" relative z-50 bg-white dark:bg-neutral-900 w-64 h-full p-6 space-y-6 shadow-xl"
+            className="relative z-50 bg-white dark:bg-neutral-900 w-64 h-full p-6 space-y-6 shadow-xl ml-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <Button
@@ -155,11 +149,11 @@ export default function Navbar() {
               <X className="w-6 h-6" />
             </Button>
             <div className="flex flex-col items-start gap-4 mt-10">
-              {navItems.map((item, idx) => (
+              {navItems.map((item) => (
                 <Link
-                  key={idx}
+                  key={item.name}
                   href={item.href}
-                  className="text-md font-medium text-neutral-800 dark:text-white hover:text-[#4a3294]"
+                  className="font-nav text-md font-medium text-neutral-800 dark:text-white hover:text-[#4a3294]"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   {item.name}
@@ -167,7 +161,7 @@ export default function Navbar() {
               ))}
               <Button
                 onClick={toggleDarkMode}
-                className="p-2 rounded cursor-pointer hover:bg-neutral-300  bg-neutral-200 dark:bg-neutral-800 text-neutral-800 dark:text-white flex items-center gap-2"
+                className="p-2 rounded cursor-pointer hover:bg-neutral-300 bg-neutral-200 dark:bg-neutral-800 text-neutral-800 dark:text-white flex items-center gap-2"
               >
                 {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </Button>

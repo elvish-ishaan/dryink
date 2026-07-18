@@ -132,29 +132,29 @@ export default function PricingCard({
     <div
       className={`relative flex flex-col rounded-2xl p-6 border transition-all ${
         highlighted
-          ? 'bg-neutral-800 border-purple-600 shadow-lg shadow-purple-900/30'
-          : 'bg-neutral-900 border-neutral-700'
+          ? 'bg-white dark:bg-neutral-800 border-[#4a3294] shadow-lg shadow-[#4a3294]/10'
+          : 'bg-[#f8f8f8] dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700'
       }`}
     >
       {badge && (
-        <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-purple-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#4a3294] text-white text-xs font-badge px-3 py-1 rounded-full shadow-sm">
           {badge}
         </span>
       )}
 
       <div className="mb-4">
-        <h3 className="text-lg font-semibold text-white">{name}</h3>
+        <h3 className="font-nav text-lg font-semibold text-black dark:text-white">{name}</h3>
         <div className="mt-2 flex items-end gap-1">
-          <span className="text-4xl font-bold text-white">${priceUSD}</span>
-          <span className="text-neutral-400 mb-1">USD</span>
+          <span className="font-heading text-4xl font-bold tracking-[-1px] text-black dark:text-white">${priceUSD}</span>
+          <span className="font-body text-neutral-500 mb-1">USD</span>
         </div>
-        <p className="mt-1 text-purple-400 font-medium">{credits} credits</p>
+        <p className="mt-1 font-body text-[#4a3294] font-medium">{credits} credits</p>
       </div>
 
       <ul className="space-y-2 mb-6 flex-1">
         {features.map((f) => (
-          <li key={f} className="flex items-center gap-2 text-sm text-neutral-300">
-            <Check className="h-4 w-4 text-purple-400 shrink-0" />
+          <li key={f} className="flex items-center gap-2 font-body text-sm text-neutral-700 dark:text-neutral-300">
+            <Check className={`h-4 w-4 shrink-0 ${highlighted ? 'text-[#4a3294]' : 'text-neutral-500'}`} />
             {f}
           </li>
         ))}
@@ -163,10 +163,10 @@ export default function PricingCard({
       <Button
         onClick={handleBuyNow}
         disabled={loading}
-        className={`w-full font-semibold ${
+        className={`w-full rounded-full font-nav font-medium ${
           highlighted
-            ? 'bg-purple-600 hover:bg-purple-700 text-white'
-            : 'bg-neutral-700 hover:bg-neutral-600 text-white'
+            ? 'bg-[#4a3294] hover:bg-[#3b2875] text-white'
+            : 'bg-black hover:bg-black/80 text-white'
         }`}
       >
         {loading ? 'Processing...' : 'Buy Now'}
