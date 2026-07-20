@@ -6,16 +6,19 @@ import Link from "next/link";
 import { useAnimate, stagger } from "motion/react";
 import { useSession } from "next-auth/react";
 import { ArrowUp, Mic, Paperclip, Search, Sparkles, Star } from "lucide-react";
+import ModelPicker from "./ModelPicker";
 
 const MAX_PROMPT_LENGTH = 3000;
 const HERO_BACKGROUND_IMAGE =
   "https://res.cloudinary.com/diqurtmad/image/upload/v1784374378/wallpapersden.com_forest-sky-fog_4496x3000_l4p8ho.jpg";
+const DEFAULT_MODEL = "arcee-ai/trinity-large-preview:free";
 
 const HeroSection = () => {
   const [scope, animate] = useAnimate();
   const router = useRouter();
   const { data: session } = useSession();
   const [prompt, setPrompt] = useState("");
+  const [model, setModel] = useState(DEFAULT_MODEL);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -59,6 +62,7 @@ const HeroSection = () => {
       return;
     }
     sessionStorage.setItem("pendingPrompt", trimmed);
+    sessionStorage.setItem("pendingModel", model);
     if (session?.user) {
       router.push("/dashboard");
     } else {
@@ -175,14 +179,7 @@ const HeroSection = () => {
                 <Paperclip className="h-3.5 w-3.5" />
                 Attach
               </span>
-              <span className="flex items-center gap-1.5 rounded-md bg-white/15 px-2.5 py-1 text-xs font-nav font-medium text-white">
-                <Mic className="h-3.5 w-3.5" />
-                Voice
-              </span>
-              <span className="flex items-center gap-1.5 rounded-md bg-white/15 px-2.5 py-1 text-xs font-nav font-medium text-white">
-                <Search className="h-3.5 w-3.5" />
-                Prompts
-              </span>
+              <ModelPicker model={model} onSelect={setModel} />
             </div>
             <span className="text-xs text-white/70">
               {prompt.length}/{MAX_PROMPT_LENGTH.toLocaleString()}

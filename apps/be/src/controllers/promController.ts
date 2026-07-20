@@ -31,10 +31,10 @@ function validateLlmResponse(text: string): boolean {
 // --- Main Prompt Handler ---
 export const handlePrompt = async (req: Request, res: Response) => {
   try {
-    const { prompt, fps, model } = req.body;
+    const { prompt, model } = req.body;
 
     const resolvedModel = (model && model.trim()) || process.env.LLM_MODEL;
-    if (!prompt || !fps || !resolvedModel) {
+    if (!prompt || !resolvedModel) {
       res.status(400).json({
         success: false,
         message: !resolvedModel ? 'No model selected and LLM_MODEL env var is not set' : 'All parameters are required',
@@ -157,10 +157,10 @@ export const handlePrompt = async (req: Request, res: Response) => {
 // --- Follow-up Prompt Handler ---
 export const handleFollowUpPrompt = async (req: Request, res: Response) => {
   try {
-    const { followUprompt, previousGenRes, fps, chatSessionId, model } = req.body;
+    const { followUprompt, previousGenRes, chatSessionId, model } = req.body;
 
     const resolvedModel = (model && model.trim()) || process.env.LLM_MODEL;
-    if (!followUprompt || !previousGenRes || !fps || !chatSessionId || !resolvedModel) {
+    if (!followUprompt || !previousGenRes || !chatSessionId || !resolvedModel) {
       res.status(400).json({
         success: false,
         message: !resolvedModel ? 'No model selected and LLM_MODEL env var is not set' : 'All parameters are required',

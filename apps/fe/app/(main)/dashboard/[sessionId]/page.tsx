@@ -108,7 +108,7 @@ export default function SessionPage() {
 
   const handlePromptSubmit = async (
     prompt: string,
-    params: { fps: number; model: string }
+    params: { model: string }
   ): Promise<void> => {
     const token = authSession?.user?.accessToken;
     if (!token) return;
@@ -238,12 +238,12 @@ export default function SessionPage() {
   const displayVideoUrl = animationCode ? exportedVideoUrl : (currentVideo?.url ?? null);
 
   return (
-    <div className="flex h-screen bg-neutral-950 text-white">
-      <div className="flex-shrink-0 border-r border-neutral-800">
+    <div className="flex h-screen bg-white text-neutral-900 dark:bg-neutral-950 dark:text-white">
+      <div className="flex-shrink-0 border-r border-neutral-200 dark:border-neutral-800">
         <Sidebar />
       </div>
 
-      <div className="flex-1 flex bg-neutral-900">
+      <div className="flex-1 flex bg-white dark:bg-neutral-950">
         <div className="w-3/5">
           <VideoGenerationCard
             currentVideoUrl={displayVideoUrl}
@@ -262,7 +262,7 @@ export default function SessionPage() {
           />
         </div>
 
-        <div ref={promptColRef} className="w-2/5 border-l border-neutral-800 h-full">
+        <div ref={promptColRef} className="w-2/5 border-l border-neutral-200 dark:border-neutral-800 h-full">
           <PromptCard
             messages={messages}
             onSubmit={handlePromptSubmit}

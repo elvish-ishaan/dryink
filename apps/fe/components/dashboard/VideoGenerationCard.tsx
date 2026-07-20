@@ -67,12 +67,12 @@ export default function VideoGenerationCard({
     const token = (session?.user as { accessToken?: string })?.accessToken ?? '';
 
     return (
-        <Card className="flex bg-neutral-800 rounded-none flex-col h-full">
+        <Card className="flex bg-white dark:bg-neutral-950 rounded-none border-0 shadow-none flex-col h-full">
             <CardContent className="flex flex-col w-full h-full p-2 overflow-hidden">
                 {loading ? (
                     <div className="flex flex-col gap-10 items-center justify-center h-full">
                         <Loader />
-                        <span className="text-neutral-300 font-semibold">
+                        <span className="font-body text-neutral-600 dark:text-neutral-300 font-semibold">
                             Generating animation...
                         </span>
                     </div>
@@ -97,7 +97,7 @@ export default function VideoGenerationCard({
                                         href={currentVideoUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="inline-flex items-center gap-1 text-sm text-blue-400 hover:text-blue-300"
+                                        className="inline-flex items-center gap-1 font-body text-sm text-[#4a3294] hover:text-[#4a3294]/80"
                                     >
                                         <ExternalLink className="w-4 h-4" />
                                         Watch Exported Video
@@ -109,13 +109,14 @@ export default function VideoGenerationCard({
                                         onClick={onUndo}
                                         variant="outline"
                                         size="sm"
+                                        className="rounded-full"
                                         disabled={!canUndo}
                                     >
                                         <Undo2 className="w-4 h-4 mr-1" />
                                         Previous
                                     </Button>
                                     {onExportRequest && (
-                                        <Button onClick={onExportRequest} variant="outline" size="sm">
+                                        <Button onClick={onExportRequest} variant="outline" size="sm" className="rounded-full">
                                             <Download className="w-4 h-4 mr-1" />
                                             Download Video
                                         </Button>
@@ -124,6 +125,7 @@ export default function VideoGenerationCard({
                                         onClick={onRedo}
                                         variant="outline"
                                         size="sm"
+                                        className="rounded-full"
                                         disabled={!canRedo}
                                     >
                                         <Redo2 className="w-4 h-4 mr-1" />
@@ -133,7 +135,7 @@ export default function VideoGenerationCard({
                             )}
 
                             {prompt && (
-                                <div className="text-xs text-muted-foreground text-center pb-1 px-2 truncate">
+                                <div className="font-body text-xs text-neutral-500 dark:text-neutral-400 text-center pb-1 px-2 truncate">
                                     {prompt}
                                 </div>
                             )}
@@ -163,12 +165,13 @@ export default function VideoGenerationCard({
                                 onClick={onUndo}
                                 variant="outline"
                                 size="sm"
+                                className="rounded-full"
                                 disabled={!canUndo}
                             >
                                 <Undo2 className="w-4 h-4 mr-1" />
                                 Previous
                             </Button>
-                            <Button onClick={handleDownload} variant="outline" size="sm">
+                            <Button onClick={handleDownload} variant="outline" size="sm" className="rounded-full">
                                 <Download className="w-4 h-4 mr-1" />
                                 Download
                             </Button>
@@ -176,6 +179,7 @@ export default function VideoGenerationCard({
                                 onClick={onRedo}
                                 variant="outline"
                                 size="sm"
+                                className="rounded-full"
                                 disabled={!canRedo}
                             >
                                 <Redo2 className="w-4 h-4 mr-1" />
@@ -183,14 +187,14 @@ export default function VideoGenerationCard({
                             </Button>
                         </div>
 
-                        <div className="text-xs text-muted-foreground text-center mt-1 max-w-3xl">
+                        <div className="font-body text-xs text-neutral-500 dark:text-neutral-400 text-center mt-1 max-w-3xl">
                             {prompt}
                         </div>
                     </>
                 ) : (
                     <div className="flex flex-col items-center justify-center text-center h-full">
-                        <p className="text-neutral-200 text-sm">Generated animation will appear here</p>
-                        <p className="text-xs text-neutral-300 mt-1">
+                        <p className="font-body text-neutral-600 dark:text-neutral-200 text-sm">Generated animation will appear here</p>
+                        <p className="font-body text-xs text-neutral-400 dark:text-neutral-400 mt-1">
                             Enter a prompt and adjust parameters to generate an animation
                         </p>
                     </div>

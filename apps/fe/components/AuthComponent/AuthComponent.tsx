@@ -124,18 +124,20 @@ export default function AuthPage({ type = "login" }) {
   };
 
   return (
-    <div className="w-full h-screen flex flex-col md:flex-row dark:bg-black bg-white">
+    <div className="w-full h-screen flex flex-col md:flex-row bg-white dark:bg-neutral-950">
       {/* Left (Form) */}
-      <div className="w-full md:w-1/2 flex items-center justify-center p-8">
+      <div className="w-full md:w-1/2 flex items-center justify-center px-6 py-12 md:px-16">
         <div className="w-full max-w-md space-y-6 z-10">
           {/* Logo */}
-          <div className="flex items-center space-x-2">
-            <Image src={logo} alt="Dryink Logo" width={30} height={30} />
-            <span className="text-xl font-bold">Dryink</span>
+          <div className="flex items-center gap-2">
+            <Image src={logo} alt="Dryink Logo" width={28} height={28} />
+            <span className="font-nav text-xl font-semibold tracking-[-0.6px] text-neutral-900 dark:text-white">
+              Dryink
+            </span>
           </div>
 
           {/* Heading */}
-          <h2 className="text-2xl font-bold">
+          <h2 className="font-heading text-3xl font-bold tracking-[-1.2px] leading-tight text-black dark:text-white">
             {isLogin ? "Sign in to your account" : "Sign up for an account"}
           </h2>
 
@@ -149,6 +151,7 @@ export default function AuthPage({ type = "login" }) {
              value={name}
              onChange={(e) => setName(e.target.value)}
              required
+             className="font-body rounded-xl border-neutral-200 dark:border-neutral-800"
              />}
             <Input
               type="email"
@@ -156,6 +159,7 @@ export default function AuthPage({ type = "login" }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              className="font-body rounded-xl border-neutral-200 dark:border-neutral-800"
             />
             <Input
               type="password"
@@ -163,26 +167,31 @@ export default function AuthPage({ type = "login" }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              className="font-body rounded-xl border-neutral-200 dark:border-neutral-800"
             />
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-            <Button className="w-full cursor-pointer" type="submit" disabled={credentialsLoading}>
+            {error && <p className="font-body text-sm text-red-500">{error}</p>}
+            <Button
+              className="w-full cursor-pointer rounded-full bg-black font-nav text-white hover:bg-black/80 dark:bg-white dark:text-black dark:hover:bg-white/80"
+              type="submit"
+              disabled={credentialsLoading}
+            >
               {credentialsLoading ? "Loading..." : (isLogin ? "Login" : "Sign Up")}
             </Button>
           </form>
 
           {/* Switch Auth */}
-          <p className="text-sm text-center text-muted-foreground">
+          <p className="font-body text-sm text-center text-[#505050] dark:text-neutral-400">
             {isLogin ? (
               <>
                 Dont have an account?{" "}
-                <Link href="/signup" className="text-blue-500">
+                <Link href="/signup" className="text-[#4a3294] hover:underline">
                   Sign up
                 </Link>
               </>
             ) : (
               <>
                 Already have an account?{" "}
-                <Link href="/login" className="text-blue-500">
+                <Link href="/login" className="text-[#4a3294] hover:underline">
                   Sign in
                 </Link>
               </>
@@ -191,49 +200,47 @@ export default function AuthPage({ type = "login" }) {
 
           {/* Divider */}
           <div className="relative my-6">
-            <div className="w-full border-t border-dashed border-gray-300 dark:border-gray-700" />
-            <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 px-2 bg-white dark:bg-neutral-900">
-              <span className="text-sm text-muted-foreground">
+            <div className="w-full border-t border-dashed border-neutral-300 dark:border-neutral-700" />
+            <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 px-2 bg-white dark:bg-neutral-950">
+              <span className="font-body text-sm text-[#505050] dark:text-neutral-400">
                 Or continue with
               </span>
             </div>
           </div>
-          
-          <div className=" flex gap-2 w-fit" >
-            <div className=" w-fit gap-5 flex justify-around">
-                    {/* GitHub Auth */}
-          <Button
-            type="button"
-            onClick={handleGithubLogin}
-            variant="outline"
-            className="w-full flex items-center justify-center cursor-pointer"
-            disabled={githubLoading}
-          >
-            <Github size={20}/>
-            {githubLoading ? "Loading..." : "Github"}
-          </Button>
+
+          <div className="flex gap-3 w-full">
+            {/* GitHub Auth */}
+            <Button
+              type="button"
+              onClick={handleGithubLogin}
+              variant="outline"
+              className="flex-1 min-w-0 flex items-center justify-center gap-2 cursor-pointer rounded-full font-nav border-neutral-200 dark:border-neutral-800"
+              disabled={githubLoading}
+            >
+              <Github size={20} />
+              {githubLoading ? "Loading..." : "Github"}
+            </Button>
             {/* Google Auth */}
             <Button
               type="button"
               onClick={handleGoogleLogin}
               variant="outline"
-              className="w-full flex items-center justify-center cursor-pointer"
+              className="flex-1 min-w-0 flex items-center justify-center gap-2 cursor-pointer rounded-full font-nav border-neutral-200 dark:border-neutral-800"
               disabled={googleLoading}
             >
               <Chrome size={20} />
               {googleLoading ? "Loading..." : "Google"}
             </Button>
-            </div>
           </div>
 
           {/* Terms */}
-          <p className="text-xs text-center text-muted-foreground">
+          <p className="font-badge text-xs text-center text-[#505050] dark:text-neutral-400">
             By clicking on {isLogin ? "sign in" : "sign up"}, you agree to our{" "}
-            <Link href="/terms" className="underline">
+            <Link href="/terms" className="underline hover:text-[#4a3294]">
               Terms of Service
             </Link>{" "}
             and{" "}
-            <Link href="/privacy" className="underline">
+            <Link href="/privacy" className="underline hover:text-[#4a3294]">
               Privacy Policy
             </Link>
             .
@@ -241,15 +248,21 @@ export default function AuthPage({ type = "login" }) {
         </div>
       </div>
 
-      {/* Right (Info Box with dashed borders) */}
-      <div className="hidden md:flex w-1/2 items-center justify-center p-8 bg-gradient-to-bl from-blue-600 to-purple-600 dark:bg-neutral-900 border-gray-700 dark:border-neutral-900">
-        <div className="text-center max-w-md">
-          {/* Message */}
-          <h3 className="text-lg font-semibold">
+      {/* Right (Image panel) */}
+      <div className="relative hidden md:flex w-1/2 items-end p-12 overflow-hidden">
+        <Image
+          src="https://res.cloudinary.com/diqurtmad/image/upload/v1784529951/forest-login_cffg4w.jpg"
+          alt=""
+          fill
+          priority
+          className="object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-black/0" />
+        <div className="relative z-10 max-w-md rounded-3xl border border-white/20 bg-[rgba(0,0,0,0.24)] p-6 backdrop-blur-md">
+          <h3 className="font-heading text-lg font-bold text-white">
             Dryink is used by thousands of users
           </h3>
-          <p className="text-sm text-foreground mt-2">
-            {/* write a short description of Dryink here */}
+          <p className="font-body text-sm text-white/80 mt-2">
             Forget creating videos for your students. Dryink is a powerful tool that simplifies complex ideas into engaging, animated videos.
           </p>
         </div>

@@ -109,33 +109,34 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className={`relative h-full bg-neutral-800 border-r border-neutral-700 flex flex-col transition-all duration-300 ${collapsed ? "w-14" : "md:min-w-64"}`}>
+    <aside className={`relative h-full bg-[#f8f8f8] dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-800 flex flex-col transition-all duration-300 ${collapsed ? "w-14" : "md:min-w-64"}`}>
       {/* Toggle Button */}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-3 top-4 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-neutral-600 hover:bg-neutral-500 border border-neutral-500 text-neutral-200 transition-colors"
+        className="absolute -right-3 top-4 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-white dark:bg-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-700 border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 transition-colors"
       >
         {collapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
       </button>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent className=" bg-neutral-800">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Session?</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="font-nav">Delete Session?</DialogTitle>
+            <DialogDescription className="font-body">
               Are you sure you want to delete this session? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button
               variant="destructive"
+              className="rounded-full font-nav"
               onClick={handleConfirmDelete}
             >
               Delete
             </Button>
             <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button variant="outline" className="rounded-full font-nav">Cancel</Button>
             </DialogClose>
           </DialogFooter>
         </DialogContent>
@@ -146,10 +147,10 @@ export default function Sidebar() {
         <div className="flex flex-col items-center flex-1 py-4 gap-3">
           <Button
             size="icon"
-            className="h-8 w-8"
+            className="h-8 w-8 rounded-full bg-black text-white hover:bg-black/80 dark:bg-white dark:text-black dark:hover:bg-white/80"
             onClick={() => router.push("/dashboard")}
           >
-            <Plus className="h-4 w-4 text-black font-bold" />
+            <Plus className="h-4 w-4" />
           </Button>
           <div className="flex-1" />
           <Avatar className="h-8 w-8">
@@ -161,7 +162,7 @@ export default function Sidebar() {
           <Button
             size="icon"
             variant="ghost"
-            className="h-8 w-8 text-neutral-200 hover:bg-neutral-700"
+            className="h-8 w-8 rounded-full text-neutral-500 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
             onClick={handleSignOut}
           >
             <LogOut className="h-4 w-4" />
@@ -171,10 +172,16 @@ export default function Sidebar() {
         <>
           {/* Sessions */}
           <div className="flex-1 w-[10] overflow-y-auto p-4 space-y-2">
-            <h3 className="text-sm font-semibold p-2 text-neutral-300">Sessions</h3>
-            <Button className=" w-full"
-            onClick={() => router.push("/dashboard")}
-            ><span><Plus className=" text-black font-bold"/></span>New Chat</Button>
+            <h3 className="font-nav text-xs font-semibold uppercase tracking-wider p-2 text-neutral-500 dark:text-neutral-400">
+              Sessions
+            </h3>
+            <Button
+              className="w-full rounded-full bg-black text-white hover:bg-black/80 dark:bg-white dark:text-black dark:hover:bg-white/80 font-nav font-medium"
+              onClick={() => router.push("/dashboard")}
+            >
+              <Plus className="h-4 w-4" />
+              New Chat
+            </Button>
             {loading ? (
               <div className="flex items-center justify-center h-full">
                 <div className="scale-75">
@@ -186,30 +193,30 @@ export default function Sidebar() {
                 <Link
                   key={session.id}
                   href={`/dashboard/${session.id}`}
-                  className="flex items-center justify-between px-2 py-1 max-w-full rounded-md bg-neutral-700 hover:bg-neutral-600 transition-colors"
+                  className="flex items-center justify-between px-2 py-1 max-w-full rounded-lg bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm truncate">
+                    <p className="font-body text-sm truncate text-neutral-800 dark:text-neutral-100">
                       {session.chats[0]?.prompt.slice(0, 20)+ "..."}
                     </p>
                   </div>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7"
+                    className="h-7 w-7 rounded-full"
                     onClick={(e) => handleDeleteSessionClick(session.id, e)}
                   >
-                    <Trash2 className=" text-red-400 h-4 w-4" />
+                    <Trash2 className="text-red-500 dark:text-red-400 h-4 w-4" />
                   </Button>
                 </Link>
               ))
             ) : (
-              <p className="text-sm text-neutral-400">No sessions found.</p>
+              <p className="font-body text-sm text-neutral-500 dark:text-neutral-400">No sessions found.</p>
             )}
           </div>
 
           {/* User Info */}
-          <div className="p-1 px-2 border-b border-neutral-800">
+          <div className="p-1 px-2 border-t border-neutral-200 dark:border-neutral-800">
             <div className="flex items-center space-x-3">
               <Avatar>
                 <AvatarImage src={session?.user?.image || ""} />
@@ -218,12 +225,12 @@ export default function Sidebar() {
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{session?.user?.name || "User"}</p>
-                <p className="text-xs text-muted-foreground truncate">{session?.user?.email}</p>
+                <p className="font-nav text-sm font-medium truncate text-neutral-900 dark:text-white">{session?.user?.name || "User"}</p>
+                <p className="font-body text-xs text-neutral-500 dark:text-neutral-400 truncate">{session?.user?.email}</p>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <Coins className="h-3 w-3 text-purple-400" />
-                  <span className="text-xs text-purple-400 font-medium">{credits} credits</span>
-                  <Link href="/pricing" className="text-xs text-neutral-400 underline hover:text-white ml-1">
+                  <Coins className="h-3 w-3 text-[#4a3294]" />
+                  <span className="font-badge text-xs text-[#4a3294] font-medium">{credits} credits</span>
+                  <Link href="/pricing" className="font-badge text-xs text-neutral-500 dark:text-neutral-400 underline hover:text-[#4a3294] dark:hover:text-[#4a3294] ml-1">
                     Buy more
                   </Link>
                 </div>
@@ -232,9 +239,9 @@ export default function Sidebar() {
           </div>
 
           {/* Sign Out */}
-          <div className="p-2 flex justify-center border-t border-neutral-800">
+          <div className="p-2 flex justify-center border-t border-neutral-200 dark:border-neutral-800">
             <Button
-              className=" w-full  text-neutral-200 border border-neutral-700 bg-neutral-800 hover:bg-neutral-900"
+              className="w-full rounded-full font-nav text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-700"
               onClick={handleSignOut}
             >
               <LogOut className="h-4 w-4 mr-2" />

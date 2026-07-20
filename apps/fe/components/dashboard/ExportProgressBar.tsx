@@ -57,13 +57,13 @@ export default function ExportProgressBar({ jobId, token, onComplete }: ExportPr
 
   return (
     <div className="w-full max-w-3xl mt-3 px-1">
-      <div className="flex justify-between text-xs text-neutral-400 mb-1">
+      <div className="flex justify-between font-body text-xs text-neutral-500 dark:text-neutral-400 mb-1">
         <span>Exporting video...</span>
         <span>{progress}%</span>
       </div>
-      <div className="w-full bg-neutral-700 rounded-full h-1.5">
+      <div className="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-1.5">
         <div
-          className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
+          className="bg-[#4a3294] h-1.5 rounded-full transition-all duration-300"
           style={{ width: `${progress}%` }}
         />
       </div>

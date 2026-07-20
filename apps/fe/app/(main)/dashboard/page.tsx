@@ -21,7 +21,7 @@ const Page = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const autoSubmittedRef = useRef(false);
 
-  const handlePromptSubmit = async (prompt: string, params: { fps: number; model: string }) => {
+  const handlePromptSubmit = async (prompt: string, params: { model: string }) => {
     const tempAsstId = `asst-temp-${Date.now()}`;
 
     setMessages((prev) => [
@@ -95,20 +95,23 @@ const Page = () => {
     const pendingPrompt = sessionStorage.getItem('pendingPrompt');
     if (!pendingPrompt) return;
 
+    const pendingModel = sessionStorage.getItem('pendingModel');
+
     autoSubmittedRef.current = true;
     sessionStorage.removeItem('pendingPrompt');
-    handlePromptSubmit(pendingPrompt, { fps: 24, model: DEFAULT_MODEL });
+    sessionStorage.removeItem('pendingModel');
+    handlePromptSubmit(pendingPrompt, { model: pendingModel || DEFAULT_MODEL });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.accessToken]);
 
   return (
-    <div className="flex h-screen bg-neutral-950 text-white">
-      <div className="flex-shrink-0 border-r border-neutral-800">
+    <div className="flex h-screen bg-white text-neutral-900 dark:bg-neutral-950 dark:text-white">
+      <div className="flex-shrink-0 border-r border-neutral-200 dark:border-neutral-800">
         <Sidebar />
       </div>
 
-      <div className="flex-1 flex bg-neutral-900">
-        <div className="w-3/5 border-neutral-800 h-full">
+      <div className="flex-1 flex bg-white dark:bg-neutral-950">
+        <div className="w-3/5 h-full">
           <VideoGenerationCard
             currentVideoUrl={null}
             currentResponse=""
@@ -121,7 +124,7 @@ const Page = () => {
           />
         </div>
 
-        <div className="w-2/5 border-l border-neutral-800 h-full">
+        <div className="w-2/5 border-l border-neutral-200 dark:border-neutral-800 h-full">
           <PromptCard
             messages={messages}
             onSubmit={handlePromptSubmit}
