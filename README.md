@@ -19,7 +19,7 @@ Dryink is an AI-powered video generation platform that enables users to create e
          │ Prisma ORM              │ BullMQ jobs
 ┌────────▼──────────┐    ┌─────────▼────────────────────────┐
 │  PostgreSQL        │    │  Worker  (Port 5001)             │
-│  (users, sessions, │    │  Puppeteer → FFmpeg → GCP        │
+│  (users, sessions, │    │  Puppeteer → FFmpeg → R2         │
 │   jobs, payments)  │    │  Consumes 'video-export' queue   │
 └────────────────────┘    └─────────────────────────────────┘
                                         │
@@ -28,7 +28,7 @@ Dryink is an AI-powered video generation platform that enables users to create e
                            └───────────────────────┘
                                         │
                            ┌────────────▼──────────┐
-                           │  GCP Cloud Storage     │
+                           │  Cloudflare R2         │
                            │  (rendered MP4s)       │
                            └───────────────────────┘
 ```
@@ -37,7 +37,7 @@ Dryink is an AI-powered video generation platform that enables users to create e
 1. User submits a prompt → backend calls Gemini → returns generated HTML animation code
 2. HTML is previewed instantly in an iframe (hybrid rendering)
 3. User triggers export → job queued in Redis via BullMQ
-4. Worker picks up job: Puppeteer renders frames → FFmpeg encodes MP4 → uploaded to GCP
+4. Worker picks up job: Puppeteer renders frames → FFmpeg encodes MP4 → uploaded to R2
 5. Job progress (0–100%) is polled by the frontend until complete
 
 ## Project Structure
@@ -90,7 +90,7 @@ dryink/
 │   │   │   ├── client/
 │   │   │   │   └── prismaClient.ts  # Imports the shared prisma client from @dryink/db
 │   │   │   ├── configs/
-│   │   │   │   ├── gcpClient.ts # GCP auth
+│   │   │   │   ├── r2Client.ts  # Cloudflare R2 auth
 │   │   │   │   └── queueConfig.ts  # BullMQ queue init
 │   │   │   ├── middleware/
 │   │   │   │   └── auth.ts      # JWT auth middleware
@@ -139,7 +139,7 @@ dryink/
 | Database | PostgreSQL |
 | Queue | Redis + BullMQ |
 | Video | Puppeteer (headless Chrome), FFmpeg |
-| Storage | GCP Cloud Storage |
+| Storage | Cloudflare R2 |
 | AI/LLM |  OpenRouter |
 | Payments | Razorpay |
 | Auth | JWT + NextAuth.js + GitHub OAuth |
@@ -150,7 +150,7 @@ dryink/
 - npm (workspaces support, npm 7+)
 - Docker & Docker Compose (for running Postgres and Redis locally)
 - OpenRouter API key
-- GCP project + service account with Cloud Storage access
+- Cloudflare account + R2 bucket with an API token
 - GitHub OAuth app (for social login)
 - Razorpay account (for payments)
 
@@ -179,9 +179,10 @@ cp apps/worker/.env.example apps/worker/.env
 PORT=5000
 JWT_SECRET='your-jwt-secret'
 OPENROUTER_API_KEY='your-openrouter-key'
-GCP_PROJECT_ID='your-gcp-project-id'
-GCP_BUCKET_NAME='your-gcp-bucket-name'
-GCP_KEY_FILE='/path/to/service-account-key.json'
+R2_ACCOUNT_ID='your-cloudflare-account-id'
+R2_ACCESS_KEY_ID='your-r2-access-key-id'
+R2_SECRET_ACCESS_KEY='your-r2-secret-access-key'
+R2_BUCKET_NAME='your-r2-bucket-name'
 REDIS_URL='redis://localhost:6379'
 DATABASE_URL='postgresql://postgres:postgres@localhost:5432/dryink'
 RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxxxxxx
@@ -203,9 +204,11 @@ NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxxxxxx
 
 ```env
 DATABASE_URL='postgresql://postgres:postgres@localhost:5432/dryink'
-GCP_PROJECT_ID='your-gcp-project-id'
-GCP_BUCKET_NAME='your-gcp-bucket-name'
-GCP_KEY_FILE='/path/to/service-account-key.json'
+R2_ACCOUNT_ID='your-cloudflare-account-id'
+R2_ACCESS_KEY_ID='your-r2-access-key-id'
+R2_SECRET_ACCESS_KEY='your-r2-secret-access-key'
+R2_BUCKET_NAME='your-r2-bucket-name'
+R2_PUBLIC_URL='https://pub-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.r2.dev'
 REDIS_URL='redis://localhost:6379'
 ```
 
@@ -327,7 +330,7 @@ A helper script exists at `scripts/docker-setup.sh` for first-time setup, but li
 ```
 User ─────────────── ChatSession ── Chat ── Job
   │                                    │
-  └── Transaction                      └── (genUrl → GCP)
+  └── Transaction                      └── (genUrl → R2)
 ```
 
 - **User**: id, email, password, name, authProvider, credits

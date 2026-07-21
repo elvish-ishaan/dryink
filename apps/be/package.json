@@ -15,8 +15,9 @@
   "type": "commonjs",
   "dependencies": {
     "@ai-sdk/google": "^2.0.44",
+    "@aws-sdk/client-s3": "^3.700.0",
+    "@aws-sdk/s3-request-presigner": "^3.700.0",
     "@dryink/db": "*",
-    "@google-cloud/storage": "^7.16.0",
     "@types/cors": "^2.8.18",
     "@types/express": "^5.0.1",
     "@types/jsonwebtoken": "^9.0.9",

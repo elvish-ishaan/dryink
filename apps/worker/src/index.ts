@@ -2,7 +2,7 @@ import express from "express";
 import { Worker } from 'bullmq';
 import { connection } from "./configs/redis";
 import { generateVideo } from "./core/operation";
-import { uploadToGcp } from "./configs/gcpStorage";
+import { uploadToR2 } from "./configs/r2Storage";
 import fs from 'fs-extra';
 import path from "path";
 import prisma from "./configs/prismaclient";
@@ -57,10 +57,10 @@ const worker = new Worker('video-export', async (job) => {
       onProgress
     );
 
-    const uploadedObjUrl = await uploadToGcp(videoPath, `${jobData.jobId}.mp4`);
+    const uploadedObjUrl = await uploadToR2(videoPath, `${jobData.jobId}.mp4`);
 
     if (!uploadedObjUrl) {
-      throw new Error('Upload to GCP returned null/undefined URL');
+      throw new Error('Upload to R2 returned null/undefined URL');
     }
 
     const folderToDlt = path.dirname(videoPath);

@@ -6,5 +6,5 @@ dist
 
 node_modules
 
-
+# Leftover GCP service account key from the pre-R2 setup; keep ignored, safe to delete manually
 gcp-key.json
