@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { modifySketchSystemPrompt, newSystemPrompt } from "../lib/prompts";
+import { newSystemPrompt } from "../lib/prompts";
 import prisma from "../client/prismaClient";
 import OpenAI from "openai";
 import { logger } from "../lib/logger";
@@ -157,10 +157,10 @@ export const handlePrompt = async (req: Request, res: Response) => {
 // --- Follow-up Prompt Handler ---
 export const handleFollowUpPrompt = async (req: Request, res: Response) => {
   try {
-    const { followUprompt, previousGenRes, chatSessionId, model } = req.body;
+    const { followUprompt, chatSessionId, model } = req.body;
 
     const resolvedModel = (model && model.trim()) || process.env.LLM_MODEL;
-    if (!followUprompt || !previousGenRes || !chatSessionId || !resolvedModel) {
+    if (!followUprompt || !chatSessionId || !resolvedModel) {
       res.status(400).json({
         success: false,
         message: !resolvedModel ? 'No model selected and LLM_MODEL env var is not set' : 'All parameters are required',
@@ -182,12 +182,41 @@ export const handleFollowUpPrompt = async (req: Request, res: Response) => {
       return;
     }
 
+    // Reconstruct the full conversation so far, so the model has complete
+    // context of everything the user has asked for across the session.
+    const history = await prisma.chat.findMany({
+      where: { chatSessionId },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    if (history.length === 0) {
+      res.status(404).json({
+        success: false,
+        message: 'No prior chat found for this session',
+      });
+      return;
+    }
+
+    const lastTurn = history[history.length - 1];
+    const priorTurns = history.slice(0, -1);
+
+    const conversationMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+      { role: 'system', content: newSystemPrompt },
+      ...priorTurns.flatMap((c): OpenAI.Chat.Completions.ChatCompletionMessageParam[] => [
+        { role: 'user', content: c.prompt },
+        { role: 'assistant', content: c.message ?? 'Animation updated!' },
+      ]),
+      {
+        role: 'user',
+        content: `${lastTurn.prompt}\n\n(Assistant built the following in response — this is the CURRENT code state:)\n${lastTurn.responce}`,
+      },
+      { role: 'assistant', content: lastTurn.message ?? 'Animation updated!' },
+      { role: 'user', content: followUprompt },
+    ];
+
     const followUpCompletion = await getOpenRouter().chat.completions.create({
       model: resolvedModel,
-      messages: [
-        { role: 'system', content: modifySketchSystemPrompt },
-        { role: 'user', content: `Instruction: ${followUprompt}\n\nExisting code to modify:\n${previousGenRes}` },
-      ],
+      messages: conversationMessages,
     });
 
     const rawFollowUpResponse = followUpCompletion.choices[0].message.content ?? '';

@@ -1,7 +1,7 @@
 'use client';
 
 import { sanitizeAnimationCode } from '@/lib/sanitizeCode';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CornerUpLeft, Maximize2, Pause, Play } from 'lucide-react';
 import { Button } from '../ui/button';
 
@@ -13,6 +13,11 @@ interface AnimationIframeProps {
 export default function AnimationIframe({ htmlCode, onReply }: AnimationIframeProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isPlaying, setIsPlaying] = useState(true);
+
+  // A new animation reloads the iframe and auto-plays, so keep the toggle in sync.
+  useEffect(() => {
+    setIsPlaying(true);
+  }, [htmlCode]);
 
   const togglePlay = () => {
     const iframe = iframeRef.current;

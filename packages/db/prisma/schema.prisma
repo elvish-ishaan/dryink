@@ -52,6 +52,7 @@ model Chat {
   responce String
   message String?
   genUrl String?
+  createdAt DateTime @default(now())
   exportJobs  Job[]
 }
 

@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import AnimatedPromptInput from "./AnimatedPrompt";
 import ModelPicker from "../herosection/ModelPicker";
 import type { ErrorState } from "@/types/types";
+import { useSelectedModel } from "@/hooks/useSelectedModel";
 
 interface InputCardProps {
     onSubmit: (prompt: string, params: {
@@ -23,9 +24,7 @@ export default function InputCard({ onSubmit, disabled = false, prefillPrompt }:
         if (prefillPrompt) setPrompt(prefillPrompt);
     }, [prefillPrompt]);
 
-    const DEFAULT_MODEL = 'arcee-ai/trinity-large-preview:free';
-
-    const [model, setModel] = useState<string>(DEFAULT_MODEL);
+    const [model, setModel] = useSelectedModel();
 
     const validateInputs = () => {
         const newErrors: ErrorState = { prompt: '', width: '', height: '', frameCount: '' };

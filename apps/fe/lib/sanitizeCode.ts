@@ -45,16 +45,59 @@ export function sanitizeAnimationCode(html: string): string {
     }
   }
 
-  // Inject CSS to remove scrollbars and fill the iframe viewport
-  const styleTag = '<style>html,body{margin:0;padding:0;overflow:hidden;width:100%;height:100%;}</style>';
+  // Inject CSS to remove scrollbars and keep the whole sketch inside the iframe.
+  // Sketches size their canvas independently (often larger than the preview pane),
+  // so we center the body and scale the canvas down to fit while preserving its
+  // aspect ratio — the full animation stays visible instead of being clipped.
+  const styleTag =
+    '<style>' +
+    'html,body{margin:0;padding:0;overflow:hidden;width:100%;height:100%;}' +
+    'body{display:flex;align-items:center;justify-content:center;}' +
+    'canvas{max-width:100%!important;max-height:100%!important;width:auto!important;height:auto!important;object-fit:contain;display:block;}' +
+    '</style>';
   if (sanitized.includes('</head>')) {
     sanitized = sanitized.replace('</head>', styleTag + '</head>');
   } else {
     sanitized = styleTag + sanitized;
   }
 
-  // Inject play/pause message listener (parent sends 'pause' / 'play' via postMessage)
-  const controlScript = '<scr' + 'ipt>window.addEventListener("message",function(e){if(e.data==="pause"){if(typeof noLoop==="function")noLoop();}else if(e.data==="play"){if(typeof loop==="function")loop();}});</scr' + 'ipt>';
+  // Inject the playback driver. Generated sketches call noLoop() and expose
+  // window.setFrame(n) / window.getTotalFrames(); they do NOT self-animate.
+  // This driver advances setFrame() in a requestAnimationFrame loop at the same
+  // fps used for export (24) so the live preview actually plays, and wires the
+  // parent's 'pause' / 'play' postMessages to stop/resume the loop.
+  const driver = [
+    '(function(){',
+    '  var FPS = 24, interval = 1000 / FPS;',
+    '  var frame = 0, rafId = null, playing = true, lastTime = 0;',
+    '  function tick(now){',
+    '    if(!playing){ rafId = null; return; }',
+    '    rafId = requestAnimationFrame(tick);',
+    '    if(now - lastTime < interval) return;',
+    '    lastTime = now;',
+    '    if(typeof window.setFrame === "function"){',
+    '      var total = (typeof window.getTotalFrames === "function") ? window.getTotalFrames() : 240;',
+    '      if(!total || total < 1) total = 240;',
+    '      window.setFrame(frame % total);',
+    '      frame++;',
+    '    }',
+    '  }',
+    '  function start(){ if(rafId) return; playing = true; lastTime = 0; rafId = requestAnimationFrame(tick); }',
+    '  function stop(){ playing = false; if(rafId){ cancelAnimationFrame(rafId); rafId = null; } }',
+    '  window.addEventListener("message", function(e){',
+    '    if(e.data === "pause") stop();',
+    '    else if(e.data === "play") start();',
+    '  });',
+    '  var tries = 0;',
+    '  function waitAndStart(){',
+    '    if(typeof window.setFrame === "function"){ start(); return; }',
+    '    if(tries++ < 100) setTimeout(waitAndStart, 50);', // give up after ~5s (self-animating sketch)
+    '  }',
+    '  if(document.readyState === "complete") waitAndStart();',
+    '  else window.addEventListener("load", waitAndStart);',
+    '})();',
+  ].join('');
+  const controlScript = '<scr' + 'ipt>' + driver + '</scr' + 'ipt>';
   const lastBody = sanitized.lastIndexOf('</body>');
   if (lastBody !== -1) {
     sanitized = sanitized.slice(0, lastBody) + controlScript + sanitized.slice(lastBody);

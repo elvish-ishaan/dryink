@@ -12,7 +12,7 @@ export const getUserSessions = async (req: Request, res: Response): Promise<void
       include: {
         chats: {
           orderBy: {
-            id: 'asc'
+            createdAt: 'asc'
           }
         }
       },
@@ -47,7 +47,7 @@ export const getSessionById = async (req: Request, res: Response): Promise<void>
       include: {
         chats: {
           orderBy: {
-            id: 'asc'
+            createdAt: 'asc'
           }
         }
       }

@@ -132,7 +132,6 @@ export default function SessionPage() {
         body: JSON.stringify({
           chatSessionId: sessionId,
           followUprompt: prompt,
-          previousGenRes: currentCodeRef.current,
           ...params,
         }),
       });

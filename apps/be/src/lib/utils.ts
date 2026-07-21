@@ -1,14 +1,18 @@
-import { gcpBucket } from "../configs/gcpClient";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { r2Client, R2_BUCKET_NAME } from "../configs/r2Client";
 
-export async function getGcpSignedUrl(key: string, expiresInSeconds: number = 3600, downloadable: boolean = true) {
+export async function getR2SignedUrl(key: string, expiresInSeconds: number = 3600, downloadable: boolean = true) {
     try {
-      const [url] = await gcpBucket.file(key).getSignedUrl({
-        version: "v4",
-        action: "read",
-        expires: Date.now() + expiresInSeconds * 1000,
+      const command = new GetObjectCommand({
+        Bucket: R2_BUCKET_NAME,
+        Key: key,
         ...(downloadable && {
-          responseDisposition: "attachment",
+          ResponseContentDisposition: `attachment; filename="${key}"`,
         }),
+      });
+      const url = await getSignedUrl(r2Client, command, {
+        expiresIn: expiresInSeconds,
       });
       return url;
     } catch (error) {

@@ -7,18 +7,18 @@ import { useAnimate, stagger } from "motion/react";
 import { useSession } from "next-auth/react";
 import { ArrowUp, Mic, Paperclip, Search, Sparkles, Star } from "lucide-react";
 import ModelPicker from "./ModelPicker";
+import { useSelectedModel } from "@/hooks/useSelectedModel";
 
 const MAX_PROMPT_LENGTH = 3000;
 const HERO_BACKGROUND_IMAGE =
   "https://res.cloudinary.com/diqurtmad/image/upload/v1784374378/wallpapersden.com_forest-sky-fog_4496x3000_l4p8ho.jpg";
-const DEFAULT_MODEL = "arcee-ai/trinity-large-preview:free";
 
 const HeroSection = () => {
   const [scope, animate] = useAnimate();
   const router = useRouter();
   const { data: session } = useSession();
   const [prompt, setPrompt] = useState("");
-  const [model, setModel] = useState(DEFAULT_MODEL);
+  const [model, setModel] = useSelectedModel();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
