@@ -5,7 +5,7 @@ import { Button } from "../ui/button";
 import { Sun, Moon, Menu, X } from "lucide-react";
 import { motion } from "motion/react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import logo from '@/assets/logo.svg'
 import { useSession } from "next-auth/react";
 import { useTheme } from "next-themes";
@@ -19,13 +19,25 @@ export default function Navbar() {
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
   const { status } = useSession();
   const { resolvedTheme, setTheme } = useTheme();
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    const onScroll = () => setIsScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // On the landing page, let the hero image show through the navbar until the user scrolls
+  const isOverHero = pathname === "/" && !isScrolled;
 
   const isDarkMode = mounted && resolvedTheme === "dark";
   const toggleDarkMode = () => {
@@ -37,7 +49,11 @@ export default function Navbar() {
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="fixed top-0 left-0 z-50 w-full border-b border-neutral-200 bg-white/90 backdrop-blur-md dark:border-neutral-800 dark:bg-neutral-950/90"
+      className={`fixed top-0 left-0 z-50 w-full border-b transition-colors duration-300 ${
+        isOverHero
+          ? "border-transparent bg-transparent"
+          : "border-neutral-200 bg-white/90 backdrop-blur-md dark:border-neutral-800 dark:bg-neutral-950/90"
+      }`}
     >
       <div className="flex items-center justify-between px-6 py-4 md:px-[120px] md:py-4">
         {/* Logo */}
@@ -51,7 +67,7 @@ export default function Navbar() {
           />
           <Link
             href="/"
-            className="font-nav text-2xl font-semibold tracking-[-1.44px] text-neutral-900 dark:text-white"
+            className={`font-nav text-2xl font-semibold tracking-[-1.44px] text-neutral-900 ${isOverHero ? "" : "dark:text-white"}`}
           >
             Dryink
           </Link>
@@ -65,7 +81,9 @@ export default function Navbar() {
                 <Button
                   variant="link"
                   onClick={() => router.push(item.href)}
-                  className="px-0 font-nav text-base font-medium tracking-[-0.2px] text-neutral-700 hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-white"
+                  className={`px-0 font-nav text-base font-medium tracking-[-0.2px] hover:text-neutral-900 ${
+                    isOverHero ? "text-neutral-800" : "text-neutral-700 dark:text-neutral-300 dark:hover:text-white"
+                  }`}
                 >
                   {item.name}
                 </Button>
@@ -77,7 +95,11 @@ export default function Navbar() {
             <Button
               onClick={toggleDarkMode}
               aria-label="Toggle Dark Mode"
-              className="rounded-md bg-transparent p-2 text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800"
+              className={`rounded-md bg-transparent p-2 ${
+                isOverHero
+                  ? "text-neutral-800 hover:bg-white/40"
+                  : "text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800"
+              }`}
             >
               {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </Button>
@@ -95,7 +117,9 @@ export default function Navbar() {
                   <Button
                     onClick={() => router.push("/signup")}
                     variant="ghost"
-                    className="w-[82px] rounded-full font-nav text-neutral-900 hover:bg-neutral-100 dark:text-white dark:hover:bg-neutral-800"
+                    className={`w-[82px] rounded-full font-nav text-neutral-900 ${
+                      isOverHero ? "hover:bg-white/40" : "hover:bg-neutral-100 dark:text-white dark:hover:bg-neutral-800"
+                    }`}
                   >
                     Sign Up
                   </Button>

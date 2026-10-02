@@ -45,15 +45,17 @@ export function sanitizeAnimationCode(html: string): string {
     }
   }
 
-  // Inject CSS to remove scrollbars and keep the whole sketch inside the iframe.
-  // Sketches size their canvas independently (often larger than the preview pane),
-  // so we center the body and scale the canvas down to fit while preserving its
-  // aspect ratio — the full animation stays visible instead of being clipped.
+  // Inject CSS to remove scrollbars and center the sketch inside the iframe.
+  // Actual size-fitting (sketches size their canvas independently, often
+  // larger than the preview pane) is done in JS below via a transform:scale
+  // — percentage-based max-width/max-height on the canvas is unreliable here
+  // because flex items don't reliably shrink below their intrinsic size, and
+  // it silently breaks if the sketch wraps its canvas in a sized container.
   const styleTag =
     '<style>' +
     'html,body{margin:0;padding:0;overflow:hidden;width:100%;height:100%;}' +
     'body{display:flex;align-items:center;justify-content:center;}' +
-    'canvas{max-width:100%!important;max-height:100%!important;width:auto!important;height:auto!important;object-fit:contain;display:block;}' +
+    'canvas{display:block;}' +
     '</style>';
   if (sanitized.includes('</head>')) {
     sanitized = sanitized.replace('</head>', styleTag + '</head>');
@@ -95,6 +97,30 @@ export function sanitizeAnimationCode(html: string): string {
     '  }',
     '  if(document.readyState === "complete") waitAndStart();',
     '  else window.addEventListener("load", waitAndStart);',
+    // Sketches size their canvas independently of the iframe (often much
+    // larger), so scale it down/up via transform to fit whatever box the
+    // iframe actually is, preserving aspect ratio. This works regardless of
+    // any wrapper markup the sketch places around the canvas, since we scale
+    // the canvas itself rather than relying on percentage CSS constraints.
+    '  function fit(){',
+    '    var canvas = document.querySelector("canvas");',
+    '    if(!canvas) return;',
+    '    canvas.style.transform = "none";',
+    '    var rect = canvas.getBoundingClientRect();',
+    '    if(!rect.width || !rect.height) return;',
+    '    var scale = Math.min(window.innerWidth / rect.width, window.innerHeight / rect.height);',
+    '    if(!isFinite(scale) || scale <= 0) scale = 1;',
+    '    canvas.style.transformOrigin = "center center";',
+    '    canvas.style.transform = "scale(" + scale + ")";',
+    '  }',
+    '  var fitTries = 0;',
+    '  function waitAndFit(){',
+    '    if(document.querySelector("canvas")){ fit(); return; }',
+    '    if(fitTries++ < 100) setTimeout(waitAndFit, 50);',
+    '  }',
+    '  if(document.readyState === "complete") waitAndFit();',
+    '  else window.addEventListener("load", waitAndFit);',
+    '  window.addEventListener("resize", fit);',
     '})();',
   ].join('');
   const controlScript = '<scr' + 'ipt>' + driver + '</scr' + 'ipt>';

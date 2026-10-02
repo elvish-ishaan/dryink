@@ -10,9 +10,13 @@ import axios from "axios";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import logo from '@/assets/logo.svg'
-import { Chrome, Github } from "lucide-react";
+import { Chrome, Eye, EyeOff, Github } from "lucide-react";
 
+type Field = "name" | "email" | "password";
+type FieldErrors = Partial<Record<Field, string>>;
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MIN_PASSWORD_LENGTH = 8;
 
 export default function AuthPage({ type = "login" }) {
   const isLogin = type === "login";
@@ -23,7 +27,59 @@ export default function AuthPage({ type = "login" }) {
   const [githubLoading, setGithubLoading] = useState<boolean>(false);
   const [googleLoading, setGoogleLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [showPassword, setShowPassword] = useState<boolean>(false);
   const router = useRouter()
+
+  const validateField = (field: Field, value: string): string | undefined => {
+    const trimmed = value.trim();
+    switch (field) {
+      case "name":
+        if (!trimmed) return "Name is required.";
+        if (trimmed.length < 2) return "Name must be at least 2 characters.";
+        return;
+      case "email":
+        if (!trimmed) return "Email is required.";
+        if (!EMAIL_REGEX.test(trimmed)) return "Enter a valid email address.";
+        return;
+      case "password":
+        if (!value) return "Password is required.";
+        // Length rule only on signup so existing accounts with shorter passwords can still log in
+        if (!isLogin && value.length < MIN_PASSWORD_LENGTH)
+          return `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
+        return;
+    }
+  };
+
+  const handleBlur = (field: Field, value: string) => {
+    setFieldErrors((prev) => ({ ...prev, [field]: validateField(field, value) }));
+  };
+
+  const handleChange = (field: Field, value: string, setter: (v: string) => void) => {
+    setter(value);
+    setError(null);
+    // Re-validate live only once a field is already showing an error
+    if (fieldErrors[field]) {
+      setFieldErrors((prev) => ({ ...prev, [field]: validateField(field, value) }));
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const errors: FieldErrors = {
+      email: validateField("email", email),
+      password: validateField("password", password),
+      ...(!isLogin && { name: validateField("name", name) }),
+    };
+    setFieldErrors(errors);
+    return !Object.values(errors).some(Boolean);
+  };
+
+  const inputClass = (field: Field) =>
+    `font-body rounded-xl ${
+      fieldErrors[field]
+        ? "border-red-500 focus-visible:ring-red-500/30 dark:border-red-500"
+        : "border-neutral-200 dark:border-neutral-800"
+    }`;
   // const avatarConfig = useMemo(() => genConfig(), [])
   
 
@@ -75,11 +131,12 @@ export default function AuthPage({ type = "login" }) {
   };
 
   const handleCredentialsAuth = async (authType: AuthType) => {
+    if (!validateForm()) return;
     setCredentialsLoading(true);
     setError(null);
     if(authType === 'login'){
       try {
-       const signinRes = await signIn('credentials', { email, password, redirect: false });
+       const signinRes = await signIn('credentials', { email: email.trim(), password, redirect: false });
 
        if( signinRes && signinRes.ok){
         toast('Login successful')
@@ -100,8 +157,8 @@ export default function AuthPage({ type = "login" }) {
     if(authType === 'signup'){
       try {
         const res = await axios.post(`${BACKEND_URL}/auth/signup`, {
-          name,
-          email,
+          name: name.trim(),
+          email: email.trim(),
           password,
           authProvider: 'credentials'
         });
@@ -142,33 +199,60 @@ export default function AuthPage({ type = "login" }) {
           </h2>
 
           {/* Form */}
-          <form className="space-y-4" onSubmit={(e) => {
+          <form className="space-y-4" noValidate onSubmit={(e) => {
             e.preventDefault(); // Prevent default form submission
             handleCredentialsAuth(isLogin ? AuthType.LOGIN : AuthType.SIGNUP);
           }}>
-            {!isLogin && <Input
-             placeholder="Full name"
-             value={name}
-             onChange={(e) => setName(e.target.value)}
-             required
-             className="font-body rounded-xl border-neutral-200 dark:border-neutral-800"
-             />}
-            <Input
-              type="email"
-              placeholder="Email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="font-body rounded-xl border-neutral-200 dark:border-neutral-800"
-            />
-            <Input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="font-body rounded-xl border-neutral-200 dark:border-neutral-800"
-            />
+            {!isLogin && (
+              <div className="space-y-1">
+                <Input
+                  placeholder="Full name"
+                  autoComplete="name"
+                  value={name}
+                  onChange={(e) => handleChange("name", e.target.value, setName)}
+                  onBlur={(e) => handleBlur("name", e.target.value)}
+                  aria-invalid={!!fieldErrors.name}
+                  className={inputClass("name")}
+                />
+                {fieldErrors.name && <p className="font-body text-xs text-red-500">{fieldErrors.name}</p>}
+              </div>
+            )}
+            <div className="space-y-1">
+              <Input
+                type="email"
+                placeholder="Email address"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => handleChange("email", e.target.value, setEmail)}
+                onBlur={(e) => handleBlur("email", e.target.value)}
+                aria-invalid={!!fieldErrors.email}
+                className={inputClass("email")}
+              />
+              {fieldErrors.email && <p className="font-body text-xs text-red-500">{fieldErrors.email}</p>}
+            </div>
+            <div className="space-y-1">
+              <div className="relative">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Password"
+                  autoComplete={isLogin ? "current-password" : "new-password"}
+                  value={password}
+                  onChange={(e) => handleChange("password", e.target.value, setPassword)}
+                  onBlur={(e) => handleBlur("password", e.target.value)}
+                  aria-invalid={!!fieldErrors.password}
+                  className={`${inputClass("password")} pr-10`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="absolute inset-y-0 right-0 flex items-center px-3 text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-white"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {fieldErrors.password && <p className="font-body text-xs text-red-500">{fieldErrors.password}</p>}
+            </div>
             {error && <p className="font-body text-sm text-red-500">{error}</p>}
             <Button
               className="w-full cursor-pointer rounded-full bg-black font-nav text-white hover:bg-black/80 dark:bg-white dark:text-black dark:hover:bg-white/80"

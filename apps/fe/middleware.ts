@@ -32,5 +32,6 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: '/((?!_next/static|favicon.ico).*)', // Apply to all routes after '/'
+  // Skip Next internals (incl. the image optimizer) and static files so public pages can load assets
+  matcher: '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
 }

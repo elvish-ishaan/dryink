@@ -109,7 +109,7 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className={`relative h-full bg-[#f8f8f8] dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-800 flex flex-col transition-all duration-300 ${collapsed ? "w-14" : "md:min-w-64"}`}>
+    <aside className={`relative h-full bg-[#f8f8f8] dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-800 flex flex-col shrink-0 transition-[width] duration-300 ease-in-out ${collapsed ? "w-14" : "w-64"}`}>
       {/* Toggle Button */}
       <button
         onClick={() => setCollapsed(!collapsed)}
@@ -144,7 +144,7 @@ export default function Sidebar() {
 
       {collapsed ? (
         /* Collapsed view */
-        <div className="flex flex-col items-center flex-1 py-4 gap-3">
+        <div className="flex flex-col items-center flex-1 w-14 py-4 gap-3 animate-in fade-in duration-300">
           <Button
             size="icon"
             className="h-8 w-8 rounded-full bg-black text-white hover:bg-black/80 dark:bg-white dark:text-black dark:hover:bg-white/80"
@@ -169,9 +169,11 @@ export default function Sidebar() {
           </Button>
         </div>
       ) : (
-        <>
+        /* Expanded view: fixed width + clipping so content doesn't reflow while the sidebar animates open */
+        <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+        <div className="flex flex-col flex-1 min-h-0 w-64 animate-in fade-in duration-300">
           {/* Sessions */}
-          <div className="flex-1 w-[10] overflow-y-auto p-4 space-y-2">
+          <div className="flex-1 overflow-y-auto p-4 space-y-2">
             <h3 className="font-nav text-xs font-semibold uppercase tracking-wider p-2 text-neutral-500 dark:text-neutral-400">
               Sessions
             </h3>
@@ -248,7 +250,8 @@ export default function Sidebar() {
               Sign Out
             </Button>
           </div>
-        </>
+        </div>
+        </div>
       )}
     </aside>
   );
