@@ -1,10 +1,9 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Bot, CornerUpLeft, Loader2 } from "lucide-react";
 import InputCard from "./InputCard";
 import type { ConversationMessage } from '@/types/types';
-import ToolTiper from "./ToolTiper";
 
 interface PromptCardProps {
   messages: ConversationMessage[];

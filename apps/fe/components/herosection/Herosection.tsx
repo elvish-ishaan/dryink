@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAnimate, stagger } from "motion/react";
 import { useSession } from "next-auth/react";
-import { ArrowUp, Mic, Paperclip, Search, Sparkles, Star } from "lucide-react";
+import { ArrowUp, Paperclip, Sparkles, Star } from "lucide-react";
 import ModelPicker from "./ModelPicker";
 import { useSelectedModel } from "@/hooks/useSelectedModel";
 
